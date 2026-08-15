@@ -12,7 +12,7 @@ services:
     rootDir: apps/api
     # pnpm workspaces must be installed from the repo root, so step out of
     # rootDir first, then build only the API package.
-    buildCommand: cd ../.. && pnpm install --frozen-lockfile && pnpm --filter @repo/api build
+    buildCommand: cd ../.. && pnpm install --frozen-lockfile --prod=false && pnpm --filter @repo/api build
     startCommand: node dist/index.cjs
     healthCheckPath: /health
     envVars:

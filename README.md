@@ -132,7 +132,7 @@ The app is split across two hosts: **Vercel** runs the Next.js web app, **Render
 Create a Web Service from the repo (or use the included [`render.yaml`](render.yaml) Blueprint):
 
 - **Root Directory:** `apps/api`
-- **Build Command:** `cd ../.. && pnpm install --frozen-lockfile && pnpm --filter @repo/api build`
+- **Build Command:** `cd ../.. && pnpm install --frozen-lockfile --prod=false && pnpm --filter @repo/api build`
 - **Start Command:** `node dist/index.cjs`
 - **Health Check:** `/health`
 

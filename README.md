@@ -24,6 +24,16 @@ ChaiForm is an AI-powered form builder for teams who want forms that look as goo
 
 **Who it's for:** anyone who needs to collect feedback, run surveys, RSVPs, lead-gen, or quizzes without fighting a plain, rigid form tool.
 
+## 📸 Screenshots
+
+| Landing page | Dashboard |
+|:---:|:---:|
+| <img src="docs/screenshots/landing.png" alt="ChaiForm landing page" width="340" /> | <img src="docs/screenshots/dashboard.png" alt="ChaiForm dashboard" width="340" /> |
+
+| Create a form |
+|:---:|
+| <img src="docs/screenshots/create-form.png" alt="ChaiForm form builder" width="340" /> |
+
 ## ✨ Features
 
 - **🤖 AI form builder** — describe the form; AI generates the questions (Pro)
@@ -35,16 +45,6 @@ ChaiForm is an AI-powered form builder for teams who want forms that look as goo
 - **✉️ Email notifications** — get pinged on every new response
 - **🔐 Auth** — Google OAuth + email/password, with email verification and password reset
 - **⚡ Rate limiting** — per-IP protection on signup, submissions, and AI calls
-
-## 📸 Screenshots
-
-| Landing page | Dashboard |
-|:---:|:---:|
-| <img src="docs/screenshots/landing.png" alt="ChaiForm landing page" width="340" /> | <img src="docs/screenshots/dashboard.png" alt="ChaiForm dashboard" width="340" /> |
-
-| Create a form |
-|:---:|
-| <img src="docs/screenshots/create-form.png" alt="ChaiForm form builder" width="340" /> |
 
 ## 🚀 Quick Start
 

@@ -41,18 +41,6 @@ ChaiForm is an AI-powered form builder for teams who want forms that look as goo
   <em>Create a form</em>
 </p>
 
-## ✨ Features
-
-- **🤖 AI form builder** — describe the form; AI generates the questions (Pro)
-- **💡 AI response insights** — question-level summaries of what people said (Pro)
-- **🧱 No-code editor** — 9+ field types, drafts, publishing, live previews
-- **📊 Live analytics** — response trends and question-level charts
-- **📥 Response inbox** — one-click CSV export
-- **🔗 Sharing** — public links, QR codes, share dialogs
-- **✉️ Email notifications** — get pinged on every new response
-- **🔐 Auth** — Google OAuth + email/password, with email verification and password reset
-- **⚡ Rate limiting** — per-IP protection on signup, submissions, and AI calls
-
 ## 🚀 Quick Start
 
 **Prerequisites:** Node.js 18+ · pnpm 9 (`corepack enable` picks up the pinned version)
@@ -75,6 +63,18 @@ pnpm dev
 - Web app → http://localhost:3000
 - API → http://localhost:8000
 - API docs (dev only) → http://localhost:8000/docs
+
+## ✨ Features
+
+- **🤖 AI form builder** — describe the form; AI generates the questions (Pro)
+- **💡 AI response insights** — question-level summaries of what people said (Pro)
+- **🧱 No-code editor** — 9+ field types, drafts, publishing, live previews
+- **📊 Live analytics** — response trends and question-level charts
+- **📥 Response inbox** — one-click CSV export
+- **🔗 Sharing** — public links, QR codes, share dialogs
+- **✉️ Email notifications** — get pinged on every new response
+- **🔐 Auth** — Google OAuth + email/password, with email verification and password reset
+- **⚡ Rate limiting** — per-IP protection on signup, submissions, and AI calls
 
 ## 🔧 Environment Variables
 

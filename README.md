@@ -1,147 +1,148 @@
 # ChaiForm
 
-Production-ready SaaS foundation for a modern Google Forms alternative.
+A modern, AI-powered form builder — a polished alternative to Google Forms and Typeform. Build forms with a drag-friendly no-code editor or generate them from a text prompt, collect unlimited responses, and analyze them with live analytics and AI insights.
 
-Implemented so far:
+## Features
 
-- MongoDB Atlas schema with Mongoose (users, forms with embedded fields, responses with embedded answers)
-- Google OAuth and email/password authentication with Auth.js / NextAuth
-- Password hashing with bcryptjs
-- User persistence in MongoDB Atlas
-- Protected `/dashboard` and `/forms` routes
-- Form builder with 9 field types, drafts, and publishing
-- Public form pages with progress indicator and inline validation
-- Response inbox with CSV export, per-form analytics, and AI insights (Pro)
-- AI form generation from a text prompt (Pro)
-- Email notifications on new responses
-- tRPC context with `publicProcedure`, `protectedProcedure`, and `proProcedure`
-- Service and validation packages
-- Environment validation and deployment-ready configuration
+- **AI form generation** — describe the form you need and AI builds the questions (Pro)
+- **AI response insights** — question-level summaries of your responses (Pro)
+- **No-code form builder** — 9+ field types, drafts, publishing, and live previews
+- **Public form pages** — progress indicator, inline validation, file uploads
+- **Response inbox** — per-form responses with one-click CSV export
+- **Live analytics** — response trends, question-level charts, and activity feed
+- **Sharing** — public links, QR codes, and share dialogs
+- **Email notifications** — notified on new responses (Resend)
+- **Authentication** — Google OAuth + email/password via Auth.js (NextAuth v5), with email verification and password reset
+- **Plans** — Free (unlimited forms and responses) and Pro (AI features, branding removal)
+- **Rate limiting** — per-IP windows for signup, submissions, and AI calls
 
-## Install Commands
+## Tech Stack
 
-The starter already includes most dependencies. Use these commands when setting up from scratch:
+| Layer | Tech |
+| --- | --- |
+| Web app | Next.js 15 (App Router), React 18, Tailwind CSS 4, shadcn-style Radix UI |
+| API | Express 5, tRPC 11, Zod, OpenAPI docs (Scalar) |
+| Database | MongoDB Atlas with Mongoose (schemas/indexes created lazily — no migrations) |
+| Auth | Auth.js / NextAuth v5, bcryptjs password hashing |
+| AI | OpenAI-compatible API (works with OpenAI or Google Gemini) |
+| Email | Resend |
+| Tooling | pnpm workspaces, Turborepo, TypeScript |
 
-```bash
-pnpm add mongoose zod dotenv --filter @repo/database
-pnpm add -D tsx @types/node dotenv-cli --filter @repo/database
-pnpm add next-auth@5.0.0-beta.30 --filter @repo/auth
-pnpm add next-auth@5.0.0-beta.30 --filter web
-pnpm add bcryptjs --filter @repo/services
-pnpm add @repo/database @repo/services @repo/validators --filter @repo/trpc
-pnpm add clsx tailwind-merge --filter @repo/ui
+## Monorepo Structure
+
+```text
+apps/
+  api/        Express + tRPC API server (port 8000)
+  web/        Next.js App Router web app (port 3000)
+
+packages/
+  auth/             Auth.js configuration and handlers
+  database/         Mongoose models and connection
+  services/         Business logic: auth, forms, AI, notifications, users
+  trpc/             Routers, context, and procedures (public / protected / pro)
+  ui/               Shared UI utilities
+  validators/       Shared Zod schemas and env validation
+  logger/           Shared logger
+  eslint-config/    Shared ESLint configs
+  typescript-config/ Shared tsconfig presets
 ```
 
-Then install workspace links:
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- pnpm 9 (`corepack enable` will pick up the pinned version)
+
+### Install
 
 ```bash
 pnpm install
 ```
 
-## Environment
+### Environment
 
-Copy `.env.example` to `.env` and fill the values:
-
-```bash
-MONGODB_URI="mongodb+srv://<user>:<password>@<cluster>.mongodb.net/chaiforms?retryWrites=true&w=majority"
-GOOGLE_CLIENT_ID=""
-GOOGLE_CLIENT_SECRET=""
-AUTH_SECRET=""
-AUTH_URL="http://localhost:3000"
-NEXTAUTH_URL="http://localhost:3000"
-NEXT_PUBLIC_API_URL="http://localhost:8000"
-BASE_URL="http://localhost:8000"
-WEB_URL="http://localhost:3000"
-PORT="8000"
-```
-
-Generate `AUTH_SECRET` with:
+Copy `.env.example` to `.env` and fill in the values:
 
 ```bash
-openssl rand -base64 32
+cp .env.example .env
 ```
 
-## Database
+Or run `./setup.sh`, which copies `.env.example` to `.env` if missing and links it into every `apps/*` and `packages/*` workspace.
 
-Create a free MongoDB Atlas cluster, then put the connection string in `MONGODB_URI`.
-No migrations are needed — Mongoose schemas and indexes are defined in code and created
-lazily on first use.
-
-Models entrypoint:
-
-```text
-packages/database/index.ts
-```
-
-Collections (document model — form fields are embedded in forms, answers in responses):
-
-- `users`
-- `forms` (with embedded `fields`)
-- `responses` (with embedded `answers`)
-
-All document ids are UUID strings to keep the API contract stable.
-
-## Architecture
-
-```text
-apps/
-  api/        Express tRPC API
-  web/        Next.js App Router app
-
-packages/
-  auth/       Auth.js configuration and handlers
-  database/   Mongoose models and connection
-  services/   Business logic and DB-facing services
-  trpc/       Routers, context, procedures
-  ui/         Shared UI utilities
-  validators/ Shared Zod schemas and env validation
-```
+| Variable | Description |
+| --- | --- |
+| `MONGODB_URI` | MongoDB Atlas connection string |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth app credentials |
+| `AUTH_SECRET` | Secret for Auth.js — generate with `openssl rand -base64 32` |
+| `AUTH_URL` / `NEXTAUTH_URL` | Web app URL (`http://localhost:3000`) |
+| `NEXT_PUBLIC_API_URL` / `BASE_URL` | API URL (`http://localhost:8000`) |
+| `WEB_URL` | Web app origin used for CORS |
+| `PORT` | API port (default `8000`) |
+| `AI_API_KEY` | API key for AI features (OpenAI or Google AI Studio) |
+| `AI_BASE_URL` | OpenAI-compatible base URL (defaults to Gemini's endpoint) |
+| `AI_MODEL` | Model name (default `gemini-3.7-flash`) |
+| `RESEND_API_KEY` / `EMAIL_FROM` | Resend credentials for response notifications |
 
 ## Development
+
+Run both the web app and the API with Turborepo:
 
 ```bash
 pnpm dev
 ```
 
-Web app:
+- Web app: <http://localhost:3000>
+- API: <http://localhost:8000>
+- Health check: <http://localhost:8000/health>
+- OpenAPI docs (dev only): <http://localhost:8000/docs>
 
-```text
-http://localhost:3000
+Other root scripts:
+
+```bash
+pnpm build        # build all workspaces
+pnpm lint         # lint all workspaces
+pnpm check-types  # typecheck all workspaces
 ```
 
-API:
+## Database
 
-```text
-http://localhost:8000
-```
+Create a free MongoDB Atlas cluster and put the connection string in `MONGODB_URI`. No migrations are needed — Mongoose schemas and indexes are defined in code and created lazily on first use. Models live in `packages/database/models/`:
+
+- `users`
+- `forms` (fields embedded)
+- `responses` (answers embedded)
+
+All document ids are UUID strings to keep the API contract stable.
+
+## API
+
+The API is an Express server exposing a tRPC router at `/trpc` (and an OpenAPI-compatible surface at `/api`). Routers live in `packages/trpc/server/routes/`:
+
+- **auth** — `providers`, `signup`, `me`, `upgradeToPro`
+- **forms** — `create`, `update`, `delete`, `publish`, `unpublish`, `getById`, `getAllMine`, `getBySlug` (public), `submit` (public), `getResponses`, `getAnalytics`, `activity`, `generateWithAI` (Pro), `summarizeResponses` (Pro)
+- **health** — `getHealth`
+
+Procedures are gated with `publicProcedure`, `protectedProcedure`, and `proProcedure`.
 
 ## Auth Flow
 
 ```text
-Landing page -> Signup/Login -> Protected dashboard
+Landing page -> Signup / Login -> Protected dashboard
 ```
 
-Supported auth methods:
+Supported methods:
 
 - Google OAuth
-- Email/password credentials
+- Email/password (bcryptjs-hashed)
 
-Credentials passwords are hashed with bcryptjs before storage. Email verification emails, OTP, and forgot password are intentionally out of scope for this checkpoint.
-
-Protected routes:
-
-- `/dashboard`
-- `/forms`
-
-Unauthenticated users are redirected to `/login`.
-
-## Deployment
-
-For Vercel, set the same environment variables from `.env.example`. MongoDB Atlas handles the database; no Docker/Postgres is required.
-
-Use these callback URLs in Google Cloud Console:
+Unauthenticated users are redirected to `/login`. Google Cloud Console callback URLs:
 
 ```text
 http://localhost:3000/api/auth/callback/google
 https://your-domain.com/api/auth/callback/google
 ```
+
+## Deployment
+
+The API and web app can be deployed to any Node host (e.g. Vercel for the web app, a container for the API). Set the same environment variables from `.env.example` on each service. MongoDB Atlas handles the database — no Docker/Postgres required.

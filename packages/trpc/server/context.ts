@@ -9,8 +9,18 @@ const env = validateServerEnv(process.env);
 type ContextOptions = Partial<CreateExpressContextOptions>;
 
 export async function createContext(opts: ContextOptions = {}) {
-  const token = opts.req
-    ? await getToken({
+  // Auth.js derives the JWE encryption salt from the session cookie name.
+  // On https the web app mints tokens with "__Secure-authjs.session-token"
+  // while on http (local dev) it uses "authjs.session-token". The token
+  // reaches us via the Authorization header (the cookie can't cross
+  // origins), which carries no cookie-name hint, so try both salts.
+  const SESSION_COOKIE_NAMES = ["__Secure-authjs.session-token", "authjs.session-token"];
+
+  let token = null;
+
+  if (opts.req) {
+    for (const cookieName of SESSION_COOKIE_NAMES) {
+      token = await getToken({
         req: {
           headers: {
             cookie: opts.req.headers.cookie ?? "",
@@ -20,8 +30,14 @@ export async function createContext(opts: ContextOptions = {}) {
           },
         },
         secret: env.AUTH_SECRET,
-      })
-    : null;
+        cookieName,
+      });
+
+      if (token) {
+        break;
+      }
+    }
+  }
 
   const userId = typeof token?.id === "string" ? token.id : null;
   const user = userId ? await userService.findById(userId) : null;

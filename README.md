@@ -1,148 +1,135 @@
+<div align="center">
+
+<img src="apps/web/app/icon.svg" alt="ChaiForm logo" width="96" />
+
 # ChaiForm
 
-A modern, AI-powered form builder — a polished alternative to Google Forms and Typeform. Build forms with a drag-friendly no-code editor or generate them from a text prompt, collect unlimited responses, and analyze them with live analytics and AI insights.
+**Build smart forms with AI — a polished alternative to Google Forms and Typeform.**
 
-## Features
+Describe the form you need and AI builds it. Collect unlimited responses, and let AI read them back to you.
 
-- **AI form generation** — describe the form you need and AI builds the questions (Pro)
-- **AI response insights** — question-level summaries of your responses (Pro)
-- **No-code form builder** — 9+ field types, drafts, publishing, and live previews
-- **Public form pages** — progress indicator, inline validation, file uploads
-- **Response inbox** — per-form responses with one-click CSV export
-- **Live analytics** — response trends, question-level charts, and activity feed
-- **Sharing** — public links, QR codes, and share dialogs
-- **Email notifications** — notified on new responses (Resend)
-- **Authentication** — Google OAuth + email/password via Auth.js (NextAuth v5), with email verification and password reset
-- **Plans** — Free (unlimited forms and responses) and Pro (AI features, branding removal)
-- **Rate limiting** — per-IP windows for signup, submissions, and AI calls
+![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js&logoColor=white)
+![tRPC](https://img.shields.io/badge/tRPC-11-2596BE)
+![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-green?logo=mongodb)
+![pnpm](https://img.shields.io/badge/pnpm-9-F69220?logo=pnpm)
+![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
 
-## Tech Stack
+</div>
 
-| Layer | Tech |
-| --- | --- |
-| Web app | Next.js 15 (App Router), React 18, Tailwind CSS 4, shadcn-style Radix UI |
-| API | Express 5, tRPC 11, Zod, OpenAPI docs (Scalar) |
-| Database | MongoDB Atlas with Mongoose (schemas/indexes created lazily — no migrations) |
-| Auth | Auth.js / NextAuth v5, bcryptjs password hashing |
-| AI | OpenAI-compatible API (works with OpenAI or Google Gemini) |
-| Email | Resend |
-| Tooling | pnpm workspaces, Turborepo, TypeScript |
+---
 
-## Monorepo Structure
+## 📖 Table of Contents
 
-```text
-apps/
-  api/        Express + tRPC API server (port 8000)
-  web/        Next.js App Router web app (port 3000)
+- [What is ChaiForm?](#what-is-chaiform)
+- [Features](#-features)
+- [Quick Start](#-quick-start)
+- [Environment Variables](#-environment-variables)
+- [For Developers](#-for-developers)
+- [Contributing](#-contributing)
+- [License](#-license)
 
-packages/
-  auth/             Auth.js configuration and handlers
-  database/         Mongoose models and connection
-  services/         Business logic: auth, forms, AI, notifications, users
-  trpc/             Routers, context, and procedures (public / protected / pro)
-  ui/               Shared UI utilities
-  validators/       Shared Zod schemas and env validation
-  logger/           Shared logger
-  eslint-config/    Shared ESLint configs
-  typescript-config/ Shared tsconfig presets
-```
+---
 
-## Getting Started
+## What is ChaiForm?
 
-### Prerequisites
+ChaiForm is an AI-powered form builder for teams who want forms that look as good as they work. It's free to start with unlimited forms and responses — no caps that pause your form mid-collection like other tools.
 
-- Node.js 18+
-- pnpm 9 (`corepack enable` will pick up the pinned version)
+**Who it's for:** anyone who needs to collect feedback, run surveys, RSVPs, lead-gen, or quizzes without fighting a plain, rigid form tool.
 
-### Install
+## ✨ Features
+
+- **🤖 AI form builder** — describe the form; AI generates the questions (Pro)
+- **💡 AI response insights** — question-level summaries of what people said (Pro)
+- **🧱 No-code editor** — 9+ field types, drafts, publishing, live previews
+- **📊 Live analytics** — response trends and question-level charts
+- **📥 Response inbox** — one-click CSV export
+- **🔗 Sharing** — public links, QR codes, share dialogs
+- **✉️ Email notifications** — get pinged on every new response
+- **🔐 Auth** — Google OAuth + email/password, with email verification and password reset
+- **⚡ Rate limiting** — per-IP protection on signup, submissions, and AI calls
+
+## 🚀 Quick Start
+
+**Prerequisites:** Node.js 18+ · pnpm 9 (`corepack enable` picks up the pinned version)
 
 ```bash
+# 1. Install dependencies
 pnpm install
-```
 
-### Environment
+# 2. Set up environment
+cp .env.example .env        # or: ./setup.sh (copies + links .env into workspaces)
 
-Copy `.env.example` to `.env` and fill in the values:
+# 3. Fill in the essentials in .env
+#    MONGODB_URI, AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+#    Generate AUTH_SECRET with: openssl rand -base64 32
 
-```bash
-cp .env.example .env
-```
-
-Or run `./setup.sh`, which copies `.env.example` to `.env` if missing and links it into every `apps/*` and `packages/*` workspace.
-
-| Variable | Description |
-| --- | --- |
-| `MONGODB_URI` | MongoDB Atlas connection string |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth app credentials |
-| `AUTH_SECRET` | Secret for Auth.js — generate with `openssl rand -base64 32` |
-| `AUTH_URL` / `NEXTAUTH_URL` | Web app URL (`http://localhost:3000`) |
-| `NEXT_PUBLIC_API_URL` / `BASE_URL` | API URL (`http://localhost:8000`) |
-| `WEB_URL` | Web app origin used for CORS |
-| `PORT` | API port (default `8000`) |
-| `AI_API_KEY` | API key for AI features (OpenAI or Google AI Studio) |
-| `AI_BASE_URL` | OpenAI-compatible base URL (defaults to Gemini's endpoint) |
-| `AI_MODEL` | Model name (default `gemini-3.7-flash`) |
-| `RESEND_API_KEY` / `EMAIL_FROM` | Resend credentials for response notifications |
-
-## Development
-
-Run both the web app and the API with Turborepo:
-
-```bash
+# 4. Run web + API together
 pnpm dev
 ```
 
-- Web app: <http://localhost:3000>
-- API: <http://localhost:8000>
-- Health check: <http://localhost:8000/health>
-- OpenAPI docs (dev only): <http://localhost:8000/docs>
+- Web app → http://localhost:3000
+- API → http://localhost:8000
+- API docs (dev only) → http://localhost:8000/docs
 
-Other root scripts:
+## 🔧 Environment Variables
+
+The full list lives in [`.env.example`](.env.example) — the source of truth. Key ones:
+
+| Variable | Purpose |
+| --- | --- |
+| `MONGODB_URI` | MongoDB Atlas connection string |
+| `AUTH_SECRET` | Auth.js secret (generate with `openssl rand -base64 32`) |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth app |
+| `AI_API_KEY` / `AI_BASE_URL` / `AI_MODEL` | AI features — OpenAI-compatible (works with Gemini) |
+| `RESEND_API_KEY` | Email notifications on new responses |
+
+## 👩‍💻 For Developers
+
+### Monorepo layout
+
+```text
+apps/
+  api/        Express + tRPC API (port 8000)
+  web/        Next.js App Router app (port 3000)
+
+packages/
+  auth/        Auth.js config & handlers
+  database/    Mongoose models & connection
+  services/    Business logic (auth, forms, AI, notifications)
+  trpc/        Routers, context, procedures (public / protected / pro)
+  ui/          Shared UI utilities
+  validators/  Shared Zod schemas & env validation
+```
+
+### Scripts
 
 ```bash
+pnpm dev          # run web + API together
 pnpm build        # build all workspaces
 pnpm lint         # lint all workspaces
 pnpm check-types  # typecheck all workspaces
 ```
 
-## Database
+### API
 
-Create a free MongoDB Atlas cluster and put the connection string in `MONGODB_URI`. No migrations are needed — Mongoose schemas and indexes are defined in code and created lazily on first use. Models live in `packages/database/models/`:
+The Express server exposes a tRPC router at `/trpc` plus an OpenAPI-compatible surface at `/api`. Routers: **auth** (signup, me, upgradeToPro…) and **forms** (CRUD, publish, submit, getResponses, getAnalytics, generateWithAI, summarizeResponses…). Interactive docs: `http://localhost:8000/docs`.
 
-- `users`
-- `forms` (fields embedded)
-- `responses` (answers embedded)
+### Database
 
-All document ids are UUID strings to keep the API contract stable.
+MongoDB with Mongoose — no migrations needed (schemas/indexes created lazily). Models: `users`, `forms` (fields embedded), `responses` (answers embedded). All ids are UUID strings.
 
-## API
+## 🤝 Contributing
 
-The API is an Express server exposing a tRPC router at `/trpc` (and an OpenAPI-compatible surface at `/api`). Routers live in `packages/trpc/server/routes/`:
+PRs are welcome! For feature ideas and planned work, see the [improvement checklist](improvement-checklist.md). Before opening a PR: run `pnpm lint` and `pnpm check-types`.
 
-- **auth** — `providers`, `signup`, `me`, `upgradeToPro`
-- **forms** — `create`, `update`, `delete`, `publish`, `unpublish`, `getById`, `getAllMine`, `getBySlug` (public), `submit` (public), `getResponses`, `getAnalytics`, `activity`, `generateWithAI` (Pro), `summarizeResponses` (Pro)
-- **health** — `getHealth`
+## 📄 License
 
-Procedures are gated with `publicProcedure`, `protectedProcedure`, and `proProcedure`.
+Not yet licensed — reach out or open an issue if you'd like to use or contribute to the code.
 
-## Auth Flow
+---
 
-```text
-Landing page -> Signup / Login -> Protected dashboard
-```
+<div align="center">
 
-Supported methods:
+**Star the repo** ⭐ if ChaiForm is useful to you — and [start building](https://github.com/jemin7/ChaiForm) your first form.
 
-- Google OAuth
-- Email/password (bcryptjs-hashed)
-
-Unauthenticated users are redirected to `/login`. Google Cloud Console callback URLs:
-
-```text
-http://localhost:3000/api/auth/callback/google
-https://your-domain.com/api/auth/callback/google
-```
-
-## Deployment
-
-The API and web app can be deployed to any Node host (e.g. Vercel for the web app, a container for the API). Set the same environment variables from `.env.example` on each service. MongoDB Atlas handles the database — no Docker/Postgres required.
+</div>

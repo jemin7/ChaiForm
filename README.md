@@ -28,11 +28,11 @@ ChaiForm is an AI-powered form builder for teams who want forms that look as goo
 
 | Landing page | Dashboard |
 |:---:|:---:|
-| <img src="docs/screenshots/landing.png" alt="ChaiForm landing page" width="340" /> | <img src="docs/screenshots/dashboard.png" alt="ChaiForm dashboard" width="340" /> |
+| <img src="docs/screenshots/landing.png" alt="ChaiForm landing page" width="560" /> | <img src="docs/screenshots/dashboard.png" alt="ChaiForm dashboard" width="560" /> |
 
 | Create a form |
 |:---:|
-| <img src="docs/screenshots/create-form.png" alt="ChaiForm form builder" width="340" /> |
+| <img src="docs/screenshots/create-form.png" alt="ChaiForm form builder" width="700" /> |
 
 ## ✨ Features
 

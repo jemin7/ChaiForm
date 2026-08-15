@@ -123,10 +123,6 @@ The Express server exposes a tRPC router at `/trpc` plus an OpenAPI-compatible s
 
 MongoDB with Mongoose — no migrations needed (schemas/indexes created lazily). Models: `users`, `forms` (fields embedded), `responses` (answers embedded). All ids are UUID strings.
 
-## 🤝 Contributing
-
-PRs are welcome! For feature ideas and planned work, see the [improvement checklist](improvement-checklist.md). Before opening a PR: run `pnpm lint` and `pnpm check-types`.
-
 ## 📄 License
 
 Not yet licensed — reach out or open an issue if you'd like to use or contribute to the code.

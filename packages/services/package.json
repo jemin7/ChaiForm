@@ -1,0 +1,28 @@
+{
+  "name": "@repo/services",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.ts",
+    "./ai": "./ai/index.ts",
+    "./auth": "./auth/index.ts",
+    "./database": "./database/index.ts",
+    "./forms": "./forms/index.ts",
+    "./notifications": "./notifications/index.ts",
+    "./user": "./user/index.ts"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "dotenv-cli": "^11.0.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@repo/database": "workspace:*",
+    "@repo/logger": "workspace:*",
+    "@repo/validators": "workspace:*",
+    "bcryptjs": "^3.0.2",
+    "zod": "^4.3.5"
+  }
+}

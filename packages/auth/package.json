@@ -1,0 +1,22 @@
+{
+  "name": "@repo/auth",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.ts",
+    "./config": "./config.ts",
+    "./env": "./env.ts"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@repo/services": "workspace:*",
+    "@repo/validators": "workspace:*",
+    "next-auth": "5.0.0-beta.30",
+    "zod": "^4.3.5"
+  }
+}

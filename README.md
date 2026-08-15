@@ -18,19 +18,6 @@ Describe the form you need and AI builds it. Collect unlimited responses, and le
 
 ---
 
-## 📖 Table of Contents
-
-- [What is ChaiForm?](#what-is-chaiform)
-- [Features](#-features)
-- [Screenshots](#-screenshots)
-- [Quick Start](#-quick-start)
-- [Environment Variables](#-environment-variables)
-- [For Developers](#-for-developers)
-- [Contributing](#-contributing)
-- [License](#-license)
-
----
-
 ## What is ChaiForm?
 
 ChaiForm is an AI-powered form builder for teams who want forms that look as good as they work. It's free to start with unlimited forms and responses — no caps that pause your form mid-collection like other tools.

@@ -158,10 +158,6 @@ https://your-vercel-domain.com/api/auth/callback/google
 2. Deploy the **web app to Vercel**, pointing `NEXT_PUBLIC_API_URL` at the Render URL.
 3. Set `WEB_URL` on Render to the final Vercel URL so CORS allows browser requests.
 
-## 📄 License
-
-Not yet licensed — reach out or open an issue if you'd like to use or contribute to the code.
-
 ---
 
 <div align="center">

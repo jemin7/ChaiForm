@@ -1,0 +1,42 @@
+# Render Blueprint for the ChaiForm API.
+# Create a new Blueprint from this repo on Render, or create a Web Service
+# manually with Root Directory = apps/api.
+#
+# Env vars marked `sync: false` are set in the Render dashboard
+# (Service > Environment) after the service is created.
+services:
+  - type: web
+    name: chaiform-api
+    runtime: node
+    plan: free
+    rootDir: apps/api
+    # pnpm workspaces must be installed from the repo root, so step out of
+    # rootDir first, then build only the API package.
+    buildCommand: cd ../.. && pnpm install --frozen-lockfile && pnpm --filter @repo/api build
+    startCommand: node dist/index.cjs
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BASE_URL
+        sync: false # e.g. https://chaiform-api.onrender.com
+      - key: WEB_URL
+        sync: false # the Vercel web app URL, e.g. https://chaiform.vercel.app — used as the CORS origin
+      - key: MONGODB_URI
+        sync: false
+      - key: AUTH_SECRET
+        sync: false # must match the web app's AUTH_SECRET
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: AI_API_KEY
+        sync: false # optional — AI form generation & insights
+      - key: AI_BASE_URL
+        sync: false # optional — OpenAI-compatible base URL
+      - key: AI_MODEL
+        sync: false # optional — model name
+      - key: RESEND_API_KEY
+        sync: false # optional — email notifications
+      - key: EMAIL_FROM
+        sync: false # optional — sender address

@@ -123,6 +123,41 @@ The Express server exposes a tRPC router at `/trpc` plus an OpenAPI-compatible s
 
 MongoDB with Mongoose — no migrations needed (schemas/indexes created lazily). Models: `users`, `forms` (fields embedded), `responses` (answers embedded). All ids are UUID strings.
 
+## 🚀 Deployment
+
+The app is split across two hosts: **Vercel** runs the Next.js web app, **Render** runs the Express API, and **MongoDB Atlas** stores data. Both services read from the same repo.
+
+### 1. Render — API
+
+Create a Web Service from the repo (or use the included [`render.yaml`](render.yaml) Blueprint):
+
+- **Root Directory:** `apps/api`
+- **Build Command:** `cd ../.. && pnpm install --frozen-lockfile && pnpm --filter @repo/api build`
+- **Start Command:** `node dist/index.cjs`
+- **Health Check:** `/health`
+
+Environment variables: `MONGODB_URI`, `AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `BASE_URL` (= the Render URL), `WEB_URL` (= the Vercel URL — **this is the CORS origin**, so it must match exactly), plus optional `AI_API_KEY` / `AI_BASE_URL` / `AI_MODEL` and `RESEND_API_KEY` / `EMAIL_FROM`.
+
+### 2. Vercel — Web app
+
+Import the repo and set **Root Directory** to `apps/web` (install/build commands are auto-detected from the pnpm workspace).
+
+Environment variables: `AUTH_SECRET` (**must be identical to the API's**), `MONGODB_URI`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `AUTH_URL` and `NEXTAUTH_URL` (= the Vercel URL), and `NEXT_PUBLIC_API_URL` (= the Render API URL).
+
+### 3. Google OAuth
+
+Add your production callback to the Google Cloud Console:
+
+```text
+https://your-vercel-domain.com/api/auth/callback/google
+```
+
+### Order matters
+
+1. Deploy the **API to Render** first and note its URL.
+2. Deploy the **web app to Vercel**, pointing `NEXT_PUBLIC_API_URL` at the Render URL.
+3. Set `WEB_URL` on Render to the final Vercel URL so CORS allows browser requests.
+
 ## 📄 License
 
 Not yet licensed — reach out or open an issue if you'd like to use or contribute to the code.

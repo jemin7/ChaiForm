@@ -32,7 +32,8 @@ const nextConfig = {
           "default-src 'self'",
           "script-src 'self' 'unsafe-inline'",
           "style-src 'self' 'unsafe-inline'",
-          "img-src 'self' data: blob:",
+          // Google OAuth avatars are served from lh1-lh6.googleusercontent.com.
+          "img-src 'self' data: blob: https://*.googleusercontent.com",
           "font-src 'self' data:",
           "connect-src 'self'",
           "frame-ancestors 'none'",

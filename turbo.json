@@ -4,6 +4,7 @@
   "globalEnv": [
     "AUTH_SECRET",
     "AUTH_URL",
+    "NEXTAUTH_URL",
     "MONGODB_URI",
     "GOOGLE_CLIENT_ID",
     "GOOGLE_CLIENT_SECRET",

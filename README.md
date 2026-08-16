@@ -146,11 +146,15 @@ Environment variables: `AUTH_SECRET` (**must be identical to the API's**), `MONG
 
 ### 3. Google OAuth
 
-Add your production callback to the Google Cloud Console:
+In the Google Cloud Console (APIs & Services → Credentials → your OAuth client → **Authorized redirect URIs**), add your production callback:
 
 ```text
 https://your-vercel-domain.com/api/auth/callback/google
 ```
+
+- The URI must match **exactly** — scheme (`https`), host, and path, with **no trailing slash**.
+- It must match the `AUTH_URL`/`NEXTAUTH_URL` set on the web app. If those vars point anywhere else (e.g. a stale `http://localhost:3000` copied from `.env.example`), Google rejects sign-in with **Error 400: `redirect_uri_mismatch`**. The app ignores a localhost `AUTH_URL` in production, but the safe fix is to set it to the real URL.
+- Testing locally? Also add `http://localhost:3000/api/auth/callback/google`.
 
 ### Order matters
 

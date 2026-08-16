@@ -7,6 +7,25 @@ import { loginSchema } from "@repo/validators/login";
 
 import { env } from "./env";
 
+// Production safety net for Google OAuth `redirect_uri_mismatch` (Error 400).
+// Auth.js builds the Google callback as `${AUTH_URL ?? NEXTAUTH_URL}/api/auth/callback/google`
+// and those env vars override the request origin, so a stale localhost value
+// (the .env.example default) makes Google reject every sign-in. In production
+// we drop a localhost URL and let Auth.js derive the origin from the request,
+// so the redirect URI always matches the domain the user is actually on.
+if (process.env.NODE_ENV === "production") {
+  for (const key of ["AUTH_URL", "NEXTAUTH_URL"] as const) {
+    const value = process.env[key];
+    if (value && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?($|\/)/i.test(value)) {
+      console.warn(
+        `[auth] Ignoring stale ${key}=${value} in production; OAuth callbacks will use the request origin. ` +
+          `Set ${key} to the real deployed HTTPS URL (and register its /api/auth/callback/google in Google Cloud Console) or remove it.`,
+      );
+      delete process.env[key];
+    }
+  }
+}
+
 export const authConfig = {
   providers: [
     Google({
@@ -57,17 +76,25 @@ export const authConfig = {
         return true;
       }
 
+      // Auth.js turns any rejection in this callback into the generic
+      // "Access Denied" page, so log the real cause before it's swallowed.
       if (!profile?.email) {
+        console.warn("[auth] Google sign-in rejected: no email in profile", { profile });
         return false;
       }
 
       const image = typeof profile.picture === "string" ? profile.picture : null;
 
-      await persistGoogleUser({
-        name: profile.name ?? profile.email,
-        email: profile.email,
-        image,
-      });
+      try {
+        await persistGoogleUser({
+          name: profile.name ?? profile.email,
+          email: profile.email,
+          image,
+        });
+      } catch (error) {
+        console.error("[auth] persistGoogleUser failed during Google sign-in:", error);
+        throw error;
+      }
 
       return true;
     },

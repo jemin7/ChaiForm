@@ -86,7 +86,7 @@ export function CompareSection() {
   const visibleRows = onlyDifferences ? comparisonRows.filter(rowsDiffer) : comparisonRows;
 
   return (
-    <section id="compare" className="mx-auto max-w-7xl px-5 py-20">
+    <section id="compare" className="mx-auto max-w-7xl px-5 py-16 sm:py-20">
       <motion.div {...fadeUp} className="max-w-2xl">
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">Compare</p>
         <h2 className="mt-3 text-4xl font-semibold tracking-tight">ChaiForm vs Google Forms vs Typeform.</h2>
@@ -152,7 +152,7 @@ export function CompareSection() {
                 <tr className="border-b">
                   <th
                     scope="col"
-                    className="sticky left-0 z-10 w-40 min-w-40 bg-card/95 p-4 font-medium text-muted-foreground backdrop-blur-xl"
+                    className="sticky left-0 z-10 w-40 min-w-40 bg-card/95 p-3 font-medium text-muted-foreground backdrop-blur-xl sm:p-4"
                   >
                     Capability
                   </th>
@@ -192,7 +192,7 @@ export function CompareSection() {
                   >
                     <th
                       scope="row"
-                      className="sticky left-0 z-10 w-40 min-w-40 bg-card/95 p-4 font-medium backdrop-blur-xl"
+                      className="sticky left-0 z-10 w-40 min-w-40 bg-card/95 p-3 font-medium backdrop-blur-xl sm:p-4"
                     >
                       {row.label}
                     </th>
@@ -200,7 +200,7 @@ export function CompareSection() {
                       <td
                         key={column}
                         className={cn(
-                          "p-4 align-top transition-colors",
+                          "p-3 align-top transition-colors sm:p-4",
                           column === selected && "bg-primary/[0.04]",
                         )}
                       >

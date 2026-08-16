@@ -48,24 +48,24 @@ export default function PricingPage() {
   return (
     <ChessBackground className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-border/50 bg-background/75 backdrop-blur-xl">
-        <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
-          <BrandMark href="/" />
+        <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-4 sm:px-5">
+          <BrandMark href="/" wordmarkClassName="max-[400px]:hidden" />
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Button asChild variant="outline" className="hidden rounded-2xl bg-background/70 sm:inline-flex">
+            <Button asChild variant="outline" className="rounded-2xl bg-background/70 px-3 sm:px-4">
               <Link href="/login">Sign in</Link>
             </Button>
-            <Button asChild className="rounded-2xl">
+            <Button asChild className="rounded-2xl px-3 sm:px-4">
               <Link href="/signup">Start free</Link>
             </Button>
           </div>
         </nav>
       </header>
 
-      <main className="mx-auto max-w-5xl px-5 py-20">
+      <main className="mx-auto max-w-5xl px-5 py-16 sm:py-20">
         <motion.div initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }} className="text-center">
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">Pricing</p>
-          <h1 className="mt-3 text-5xl font-semibold tracking-tight">Simple pricing. Unlimited forms.</h1>
+          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-balance sm:text-5xl">Simple pricing. Unlimited forms.</h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
             Start free with no response limits. Upgrade to Pro when you want AI to build and analyze your forms.
           </p>

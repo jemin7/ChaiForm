@@ -6,9 +6,11 @@ interface BrandMarkProps {
   href?: string;
   compact?: boolean;
   className?: string;
+  /** Extra classes for the "ChaiForm" wordmark, e.g. to hide it on tiny screens. */
+  wordmarkClassName?: string;
 }
 
-export function BrandMark({ href = "/", compact = false, className }: BrandMarkProps) {
+export function BrandMark({ href = "/", compact = false, className, wordmarkClassName }: BrandMarkProps) {
   const content = (
     <span className={cn("inline-flex items-center gap-3", className)}>
       <span className="relative flex size-10 items-center justify-center rounded-2xl border border-white/15 bg-foreground text-background shadow-lg shadow-black/10">
@@ -21,7 +23,9 @@ export function BrandMark({ href = "/", compact = false, className }: BrandMarkP
         </svg>
         <span className="absolute -right-1 -top-1 size-3 rounded-full bg-emerald-400 ring-4 ring-background" />
       </span>
-      {!compact ? <span className="text-lg font-semibold tracking-tight">ChaiForm</span> : null}
+      {!compact ? (
+        <span className={cn("text-lg font-semibold tracking-tight", wordmarkClassName)}>ChaiForm</span>
+      ) : null}
     </span>
   );
 

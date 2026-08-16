@@ -152,6 +152,24 @@
 
 html {
   scroll-behavior: smooth;
+  /* Keep anchored sections (#features, #compare, #faq) clear of the sticky header. */
+  scroll-padding-top: 5.5rem;
+}
+
+/* Respect users who disable motion — relevant on mobile where battery and
+   vestibular sensitivity matter. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 * {

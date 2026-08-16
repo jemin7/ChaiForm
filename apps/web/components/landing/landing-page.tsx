@@ -16,6 +16,7 @@ import {
 
 import { BrandMark } from "~/components/brand/brand-mark";
 import { CompareSection } from "~/components/landing/compare-section";
+import { MobileNav } from "~/components/landing/mobile-nav";
 import { ChessBackground } from "~/components/layout/chess-background";
 import { Button } from "~/components/ui/button";
 import { ThemeToggle } from "~/components/theme/theme-toggle";
@@ -46,8 +47,8 @@ export function LandingPage() {
   return (
     <ChessBackground className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-border/50 bg-background/75 backdrop-blur-xl">
-        <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
-          <BrandMark />
+        <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-4 sm:px-5">
+          <BrandMark wordmarkClassName="max-[400px]:hidden" />
           <div className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
             <a href="#features" className="transition hover:text-foreground">Features</a>
             <a href="#compare" className="transition hover:text-foreground">Compare</a>
@@ -59,43 +60,44 @@ export function LandingPage() {
             <Button asChild variant="outline" className="hidden rounded-2xl bg-background/70 sm:inline-flex">
               <Link href="/login">Sign in</Link>
             </Button>
-            <Button asChild className="rounded-2xl">
+            <Button asChild className="rounded-2xl px-3 sm:px-4">
               <Link href="/signup">Start free</Link>
             </Button>
+            <MobileNav />
           </div>
         </nav>
       </header>
 
       <main>
-        <section className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl items-center gap-12 px-5 py-16 lg:grid-cols-[1fr_0.9fr]">
+        <section className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl items-center gap-10 px-5 py-14 sm:gap-12 sm:py-16 lg:grid-cols-[1fr_0.9fr]">
           <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65 }}>
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border bg-background/70 px-3 py-1 text-sm text-muted-foreground shadow-sm backdrop-blur">
               <Sparkles className="size-4 text-emerald-500" />
               Premium forms workspace for modern teams
             </div>
-            <h1 className="max-w-4xl text-5xl font-semibold tracking-tight text-balance sm:text-6xl lg:text-7xl">
+            <h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-balance sm:text-6xl lg:text-7xl">
               Build Smart Forms with ChaiForm
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
               Create beautiful forms, collect responses, analyze data, and automate workflows.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="h-12 rounded-2xl px-6">
+              <Button asChild size="lg" className="h-12 w-full rounded-2xl px-6 sm:w-auto">
                 <Link href="/signup">
                   Start free
                   <ArrowRight className="size-4" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="h-12 rounded-2xl bg-background/70 px-6 backdrop-blur">
+              <Button asChild size="lg" variant="outline" className="h-12 w-full rounded-2xl bg-background/70 px-6 backdrop-blur sm:w-auto">
                 <Link href="/pricing">
                   <Play className="size-4" />
                   See pricing
                 </Link>
               </Button>
             </div>
-            <div className="mt-10 grid max-w-xl grid-cols-3 gap-3 text-sm">
+            <div className="mt-10 grid max-w-xl grid-cols-3 gap-2 text-sm sm:gap-3">
               {["AI builder", "Unlimited responses", "QR + share links"].map((item) => (
-                <div key={item} className="rounded-2xl border bg-card/70 p-4 shadow-sm backdrop-blur">
+                <div key={item} className="rounded-2xl border bg-card/70 p-3 shadow-sm backdrop-blur sm:p-4">
                   <CheckCircle2 className="mb-2 size-4 text-emerald-500" />
                   <p className="font-medium">{item}</p>
                   <p className="text-muted-foreground">Included</p>
@@ -140,7 +142,7 @@ export function LandingPage() {
           </motion.div>
         </section>
 
-        <section id="features" className="mx-auto max-w-7xl px-5 py-20">
+        <section id="features" className="mx-auto max-w-7xl px-5 py-16 sm:py-20">
           <motion.div {...fadeUp} className="max-w-2xl">
             <p className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">Features</p>
             <h2 className="mt-3 text-4xl font-semibold tracking-tight">Everything a real form product needs.</h2>
@@ -156,7 +158,7 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section id="showcase" className="mx-auto max-w-7xl px-5 py-20">
+        <section id="showcase" className="mx-auto max-w-7xl px-5 py-16 sm:py-20">
           <motion.div {...fadeUp} className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">Builder showcase</p>
@@ -174,8 +176,8 @@ export function LandingPage() {
           </motion.div>
         </section>
 
-        <section id="analytics" className="mx-auto max-w-7xl px-5 py-20">
-          <motion.div {...fadeUp} className="rounded-[2rem] border bg-foreground p-8 text-background shadow-2xl dark:bg-white dark:text-black">
+        <section id="analytics" className="mx-auto max-w-7xl px-5 py-16 sm:py-20">
+          <motion.div {...fadeUp} className="rounded-[2rem] border bg-foreground p-6 text-background shadow-2xl sm:p-8 dark:bg-white dark:text-black">
             <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
               <div>
                 <p className="text-sm font-medium uppercase tracking-[0.2em] opacity-60">Analytics preview</p>
@@ -196,7 +198,7 @@ export function LandingPage() {
 
         <CompareSection />
 
-        <section className="mx-auto grid max-w-7xl gap-4 px-5 py-20 md:grid-cols-3">
+        <section className="mx-auto grid max-w-7xl gap-4 px-5 py-16 sm:py-20 md:grid-cols-3">
           {[
             { icon: Users, title: "Team collaboration", body: "Shared workspace patterns for teams reviewing forms and outcomes." },
             { icon: MessageSquareQuote, title: "Loved by builders", body: "Clean enough for portfolios, fast enough for hackathons, useful enough for demos." },
@@ -210,7 +212,7 @@ export function LandingPage() {
           ))}
         </section>
 
-        <section id="faq" className="mx-auto max-w-4xl px-5 py-20">
+        <section id="faq" className="mx-auto max-w-4xl px-5 py-16 sm:py-20">
           <motion.div {...fadeUp} className="text-center">
             <h2 className="text-4xl font-semibold tracking-tight">FAQ</h2>
           </motion.div>
@@ -224,13 +226,13 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-5 pb-24 pt-10">
-          <motion.div {...fadeUp} className="rounded-[2rem] border bg-card/80 p-8 text-center shadow-xl backdrop-blur">
+        <section className="mx-auto max-w-7xl px-5 pb-20 pt-8 sm:pb-24 sm:pt-10">
+          <motion.div {...fadeUp} className="rounded-[2rem] border bg-card/80 p-6 text-center shadow-xl backdrop-blur sm:p-8">
             <h2 className="text-4xl font-semibold tracking-tight">Launch your next form in minutes.</h2>
             <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
               Beautiful forms, unlimited responses, and AI when you need it — free to start.
             </p>
-            <Button asChild size="lg" className="mt-8 h-12 rounded-2xl px-6">
+            <Button asChild size="lg" className="mt-8 h-12 w-full rounded-2xl px-6 sm:w-auto">
               <Link href="/signup">
                 Start building
                 <ArrowRight className="size-4" />

@@ -212,7 +212,7 @@ export function FormsList({ initialQuery }: { initialQuery?: string }) {
                     <p className="font-medium">{formatDate(form.updatedAt)}</p>
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     className="flex-1 rounded-2xl"
                     onClick={(event) => {

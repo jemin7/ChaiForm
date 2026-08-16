@@ -22,7 +22,7 @@ export default function ForgotPasswordPage() {
         <div className="absolute right-5 top-5">
           <ThemeToggle />
         </div>
-        <section className="w-full max-w-md rounded-[2rem] border bg-card/85 p-8 shadow-2xl shadow-black/10 backdrop-blur-xl">
+        <section className="w-full max-w-md rounded-[2rem] border bg-card/85 p-6 shadow-2xl shadow-black/10 backdrop-blur-xl sm:p-8">
           <div className="mb-8 space-y-5">
             <BrandMark href="/" />
             <div>

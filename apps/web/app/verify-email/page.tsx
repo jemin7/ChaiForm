@@ -24,7 +24,7 @@ export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageP
         <div className="absolute right-5 top-5">
           <ThemeToggle />
         </div>
-        <section className="w-full max-w-md rounded-[2rem] border bg-card/85 p-8 text-center shadow-2xl shadow-black/10 backdrop-blur-xl">
+        <section className="w-full max-w-md rounded-[2rem] border bg-card/85 p-6 text-center shadow-2xl shadow-black/10 backdrop-blur-xl sm:p-8">
           <div className="mb-6 flex justify-center">
             <BrandMark href="/" />
           </div>

@@ -31,7 +31,7 @@ export default async function FillFormPage({ params }: FillFormPageProps) {
   const { slug } = await params;
 
   return (
-    <main className="min-h-screen bg-background py-10 sm:py-16">
+    <main className="min-h-screen bg-background px-4 py-10 sm:px-6 sm:py-16">
       <PublicFormView slug={slug} />
     </main>
   );

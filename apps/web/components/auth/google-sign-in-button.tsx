@@ -16,7 +16,7 @@ export function GoogleSignInButton({ callbackUrl = "/dashboard" }: GoogleSignInB
         await signIn("google", { redirectTo: callbackUrl });
       }}
     >
-      <Button type="submit" size="lg">
+      <Button type="submit" size="lg" className="w-full">
         Continue with Google
         <ArrowRight aria-hidden="true" />
       </Button>

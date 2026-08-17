@@ -28,14 +28,3 @@ export const protectedProcedure = tRPCContext.procedure.use(({ ctx, next }) => {
     },
   });
 });
-
-export const proProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.dbUser.plan !== "pro") {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "This feature requires the ChaiForm Pro plan.",
-    });
-  }
-
-  return next({ ctx });
-});

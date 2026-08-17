@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Check, Loader2, Sparkles } from "lucide-react";
+import { Check, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { BrandMark } from "~/components/brand/brand-mark";
@@ -32,18 +32,15 @@ const proFeatures = [
 
 export default function PricingPage() {
   const meQuery = trpc.auth.me.useQuery(undefined, { retry: false });
-  const upgradeMutation = trpc.auth.upgradeToPro.useMutation({
-    onSuccess() {
-      toast.success("Welcome to ChaiForm Pro!");
-      meQuery.refetch();
-    },
-    onError(error) {
-      toast.error(error.message);
-    },
-  });
 
   const plan = meQuery.data?.plan;
   const signedIn = !meQuery.isLoading && !meQuery.isError && meQuery.data != null;
+
+  // Payments aren't wired up yet, so upgrading always refuses server-side.
+  // Give immediate, honest feedback instead of firing a failing request.
+  const handleUpgradeClick = () => {
+    toast.info("Pro is coming soon — payment processing isn't wired up yet.");
+  };
 
   return (
     <ChessBackground className="min-h-screen">
@@ -127,16 +124,8 @@ export default function PricingPage() {
                       You&apos;re on Pro
                     </Button>
                   ) : (
-                    <Button
-                      className="w-full rounded-2xl"
-                      onClick={() => upgradeMutation.mutate()}
-                      disabled={upgradeMutation.isPending}
-                    >
-                      {upgradeMutation.isPending ? (
-                        <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                      ) : (
-                        <Sparkles className="size-4" aria-hidden="true" />
-                      )}
+                    <Button className="w-full rounded-2xl" onClick={handleUpgradeClick}>
+                      <Sparkles className="size-4" aria-hidden="true" />
                       Upgrade to Pro
                     </Button>
                   )

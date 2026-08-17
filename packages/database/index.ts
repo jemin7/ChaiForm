@@ -75,6 +75,7 @@ void connectWithRetry();
 export * from "./models/user.model";
 export * from "./models/form.model";
 export * from "./models/response.model";
+export * from "./models/aiUsage.model";
 
 export { mongoose };
 export default mongoose;

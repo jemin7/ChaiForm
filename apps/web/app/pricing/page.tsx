@@ -15,6 +15,7 @@ import { trpc } from "~/trpc/client";
 
 const freeFeatures = [
   "Unlimited forms and responses",
+  "5 AI credits every day",
   "All field types incl. file uploads",
   "QR codes + share links",
   "CSV export",
@@ -24,8 +25,8 @@ const freeFeatures = [
 
 const proFeatures = [
   "Everything in Free",
-  "AI form generation",
-  "AI response insights",
+  "Unlimited AI form generation",
+  "Unlimited AI response insights",
   "Remove ChaiForm branding",
   "Priority support",
 ];

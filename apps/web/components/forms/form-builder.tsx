@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
@@ -14,7 +13,6 @@ import {
   Eye,
   GripVertical,
   Loader2,
-  Lock,
   MessageSquareText,
   Plus,
   QrCode,
@@ -85,6 +83,9 @@ export function FormBuilder({ initialForm }: FormBuilderProps) {
 
   const meQuery = trpc.auth.me.useQuery(undefined, { retry: false });
   const isPro = meQuery.data?.plan === "pro";
+  const aiCredits = meQuery.data?.aiCredits;
+  const creditsRemaining = aiCredits?.remaining ?? 0;
+  const aiExhausted = !isPro && !meQuery.isLoading && creditsRemaining <= 0;
 
   const generateMutation = trpc.forms.generateWithAI.useMutation({
     onSuccess(draft) {
@@ -103,9 +104,11 @@ export function FormBuilder({ initialForm }: FormBuilderProps) {
         })),
       }));
       toast.success("AI draft ready — review it, then save.");
+      meQuery.refetch();
     },
     onError(error) {
       toast.error(error.message);
+      meQuery.refetch();
     },
   });
   const [form, setForm] = useState<BuilderForm>(
@@ -501,7 +504,9 @@ export function FormBuilder({ initialForm }: FormBuilderProps) {
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {isPro ? (
+                  {meQuery.isLoading ? (
+                    <p className="text-sm text-muted-foreground">Checking your credits…</p>
+                  ) : (
                     <>
                       <Textarea
                         value={aiPrompt}
@@ -510,35 +515,30 @@ export function FormBuilder({ initialForm }: FormBuilderProps) {
                         rows={3}
                         maxLength={1000}
                       />
-                      <Button
-                        className="rounded-2xl"
-                        onClick={() => generateMutation.mutate({ prompt: aiPrompt })}
-                        disabled={aiPrompt.trim().length < 3 || generateMutation.isPending}
-                      >
-                        <Wand2 aria-hidden="true" />
-                        {generateMutation.isPending ? "Generating…" : "Generate draft"}
-                      </Button>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Button
+                          className="rounded-2xl"
+                          onClick={() => generateMutation.mutate({ prompt: aiPrompt })}
+                          disabled={aiPrompt.trim().length < 3 || generateMutation.isPending || aiExhausted}
+                        >
+                          <Wand2 aria-hidden="true" />
+                          {generateMutation.isPending ? "Generating…" : "Generate draft"}
+                        </Button>
+                        <p className="text-xs text-muted-foreground">
+                          {isPro
+                            ? "Unlimited AI generations included with Pro."
+                            : `${creditsRemaining} of ${aiCredits?.allowance ?? 5} AI credits left today — they reset daily.`}
+                        </p>
+                      </div>
+                      {aiExhausted ? (
+                        <p className="text-sm text-destructive">
+                          You&apos;re out of AI credits for today. They reset daily.
+                        </p>
+                      ) : null}
                       <p className="text-xs text-muted-foreground">
                         Replaces the fields below with an AI draft — review it before saving.
                       </p>
                     </>
-                  ) : meQuery.isLoading ? (
-                    <p className="text-sm text-muted-foreground">Checking your plan…</p>
-                  ) : (
-                    <div className="flex items-center justify-between gap-4 rounded-2xl border bg-muted/40 p-4">
-                      <div className="flex items-start gap-3">
-                        <Lock className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                        <div>
-                          <p className="text-sm font-medium">AI form generation is a Pro feature</p>
-                          <p className="mt-0.5 text-sm text-muted-foreground">
-                            Upgrade to build forms from a text prompt — faster than ever.
-                          </p>
-                        </div>
-                      </div>
-                      <Button asChild className="shrink-0 rounded-2xl">
-                        <Link href="/pricing">Upgrade</Link>
-                      </Button>
-                    </div>
                   )}
                 </CardContent>
               </Card>

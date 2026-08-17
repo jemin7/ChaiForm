@@ -1,6 +1,6 @@
 import { z, zodUndefinedModel } from "../../schema";
 import { AuthServiceError, signup } from "@repo/services/auth";
-import { userService } from "@repo/services/user";
+import { getAiCreditBalance, userService } from "@repo/services/user";
 import { signupSchema } from "@repo/validators/signup";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, publicProcedure, router } from "../../trpc";
@@ -67,15 +67,25 @@ export const authRouter = router({
         email: z.string(),
         image: z.string().nullable(),
         plan: z.enum(["free", "pro"]),
+        aiCredits: z.object({
+          remaining: z.number(),
+          allowance: z.number(),
+          resetsAt: z.string(),
+        }),
       }),
     )
     .query(async ({ ctx }) => {
+      // Lazily resets the daily balance if the stored day is stale, so the
+      // UI always shows the correct remaining credits for today.
+      const aiCredits = await getAiCreditBalance(ctx.dbUser.id);
+
       return {
         id: ctx.dbUser.id,
         name: ctx.dbUser.name,
         email: ctx.dbUser.email,
         image: ctx.dbUser.image,
         plan: ctx.dbUser.plan,
+        aiCredits,
       };
     }),
   upgradeToPro: protectedProcedure

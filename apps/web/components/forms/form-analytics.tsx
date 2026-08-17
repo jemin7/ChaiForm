@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, CalendarDays, Inbox, Loader2, Lock, MessageSquareText, QrCode, Send, Sparkles, Star, TrendingUp } from "lucide-react";
+import { ArrowLeft, CalendarDays, Inbox, Loader2, MessageSquareText, QrCode, Send, Sparkles, Star, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 
@@ -58,15 +58,21 @@ export function FormAnalytics({ formId }: FormAnalyticsProps) {
 function AnalyticsContent({ data }: { data: FormAnalyticsData }) {
   const { form, totalResponses, responsesOverTime, fields } = data;
   const [shareOpen, setShareOpen] = useState(false);
-  const [aiRequested, setAiRequested] = useState(false);
 
   const meQuery = trpc.auth.me.useQuery(undefined, { retry: false });
   const isPro = meQuery.data?.plan === "pro";
+  const aiCredits = meQuery.data?.aiCredits;
+  const creditsRemaining = aiCredits?.remaining ?? 0;
+  const aiExhausted = !isPro && !meQuery.isLoading && creditsRemaining <= 0;
 
-  const summaryQuery = trpc.forms.summarizeResponses.useQuery(
-    { id: form.id },
-    { enabled: aiRequested, retry: false },
-  );
+  const summaryMutation = trpc.forms.summarizeResponses.useMutation({
+    onSuccess() {
+      meQuery.refetch();
+    },
+    onError() {
+      meQuery.refetch();
+    },
+  });
 
   const activeDays = responsesOverTime.filter((entry) => entry.count > 0).length;
   const ratingFields = fields.filter((field) => field.averageRating != null);
@@ -140,41 +146,41 @@ function AnalyticsContent({ data }: { data: FormAnalyticsData }) {
               A plain-language summary of your responses so far.
             </p>
           </div>
-          {!summaryQuery.data && totalResponses > 0 ? (
-            isPro ? (
+          {!summaryMutation.data && totalResponses > 0 ? (
+            <div className="flex flex-col items-end gap-2">
               <Button
                 className="shrink-0 rounded-2xl"
-                onClick={() => setAiRequested(true)}
-                disabled={summaryQuery.isFetching}
+                onClick={() => summaryMutation.mutate({ id: form.id })}
+                disabled={summaryMutation.isPending || aiExhausted}
               >
-                {summaryQuery.isFetching ? (
+                {summaryMutation.isPending ? (
                   <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                 ) : (
                   <Sparkles className="size-4" aria-hidden="true" />
                 )}
-                {summaryQuery.isFetching ? "Analyzing…" : "Generate summary"}
+                {summaryMutation.isPending ? "Analyzing…" : "Generate summary"}
               </Button>
-            ) : (
-              <Button asChild variant="outline" className="shrink-0 rounded-2xl">
-                <Link href="/pricing">
-                  <Lock className="size-4" aria-hidden="true" />
-                  Upgrade for AI insights
-                </Link>
-              </Button>
-            )
+              {!isPro ? (
+                <p className="text-xs text-muted-foreground">
+                  {aiExhausted
+                    ? "Out of AI credits for today — they reset daily."
+                    : `${creditsRemaining} of ${aiCredits?.allowance ?? 5} AI credits left today.`}
+                </p>
+              ) : null}
+            </div>
           ) : null}
         </div>
-        {summaryQuery.data ? (
+        {summaryMutation.data ? (
           <pre className="mt-4 whitespace-pre-wrap rounded-2xl border bg-background/60 p-5 font-sans text-sm leading-6 text-foreground">
-            {summaryQuery.data.summary}
+            {summaryMutation.data.summary}
           </pre>
-        ) : summaryQuery.isError ? (
-          <p className="mt-4 text-sm text-destructive">{summaryQuery.error.message}</p>
+        ) : summaryMutation.isError ? (
+          <p className="mt-4 text-sm text-destructive">{summaryMutation.error.message}</p>
         ) : totalResponses === 0 ? (
           <p className="mt-4 text-sm text-muted-foreground">
             Collect at least one response to unlock AI insights.
           </p>
-        ) : summaryQuery.isFetching ? (
+        ) : summaryMutation.isPending ? (
           <p className="mt-4 text-sm text-muted-foreground">
             Analyzing your responses… this usually takes a few seconds.
           </p>

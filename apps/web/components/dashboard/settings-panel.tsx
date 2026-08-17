@@ -250,6 +250,7 @@ function PlanCard() {
 
   const plan = meQuery.data?.plan ?? "free";
   const isPro = plan === "pro";
+  const aiCredits = meQuery.data?.aiCredits;
 
   return (
     <SettingsCard title="Your plan">
@@ -269,6 +270,11 @@ function PlanCard() {
               ? "AI form generation and AI response insights are unlocked."
               : "Upgrade for AI form generation and AI response insights."}
           </p>
+          {!isPro && aiCredits ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {aiCredits.remaining} of {aiCredits.allowance} AI credits left today — they reset daily.
+            </p>
+          ) : null}
         </div>
         {isPro ? null : (
           <Button

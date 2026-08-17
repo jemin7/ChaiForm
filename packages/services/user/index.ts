@@ -4,6 +4,8 @@ import { compare, hash } from "bcryptjs";
 
 import { toUser, UserModel, type User } from "@repo/database";
 
+export * from "./credits";
+
 const PASSWORD_HASH_ROUNDS = 12;
 
 function isDuplicateKeyError(error: unknown): boolean {

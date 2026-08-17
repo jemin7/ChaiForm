@@ -19,6 +19,15 @@ import {
   unpublishForm,
   updateForm,
 } from "@repo/services/forms";
+import {
+  FORM_GENERATION_CREDITS,
+  InsufficientCreditsError,
+  recordAiUsage,
+  refundAiCredits,
+  RESPONSE_SUMMARY_CREDITS,
+  spendAiCredits,
+  type AiUsageLogInput,
+} from "@repo/services/user";
 import { generateFormSchema, summarizeResponsesSchema } from "@repo/validators/ai";
 import { createFormSchema } from "@repo/validators/create-form";
 import { publishFormSchema } from "@repo/validators/publish-form";
@@ -30,7 +39,76 @@ import {
   updateFormSchema,
 } from "@repo/validators/update-form";
 
-import { proProcedure, protectedProcedure, publicProcedure, router } from "../trpc";
+import { protectedProcedure, publicProcedure, router } from "../trpc";
+
+/** Finalize an AI request: record usage (and refund credits on failure). */
+type AiRequestDone = (outcome: "success" | "failed", error?: string | null) => Promise<void>;
+
+/**
+ * Spend AI credits before an AI request and refund them if it fails. Pro users
+ * are unlimited (cost 0, no spend/refund).
+ *
+ * Returns a function that records the outcome in the usage log; the caller
+ * must call it once the AI request finishes so the log reflects what actually
+ * happened (credits deducted vs. refunded).
+ */
+function aiCreditsGate(userId: string, plan: "free" | "pro", cost: number) {
+  const isPro = plan === "pro";
+  const charged = isPro ? 0 : cost;
+
+  if (!isPro) {
+    return async (operation: AiUsageLogInput["operation"]): Promise<AiRequestDone> => {
+      try {
+        await spendAiCredits(userId, cost);
+      } catch (error) {
+        if (error instanceof InsufficientCreditsError) {
+          await recordAiUsage({
+            userId,
+            operation,
+            credits: 0,
+            status: "insufficient_credits",
+            error: error.message,
+          });
+          throw new TRPCError({ code: "FORBIDDEN", message: error.message });
+        }
+
+        throw error;
+      }
+
+      return async (outcome: "success" | "failed", error?: string | null) => {
+        // Refund before the error propagates so a failed AI request never
+        // silently consumes the user's credit.
+        if (outcome === "failed") {
+          try {
+            await refundAiCredits(userId, cost);
+          } catch (refundError) {
+            console.error("[credits] Refund failed:", refundError);
+          }
+        }
+
+        await recordAiUsage({
+          userId,
+          operation,
+          credits: outcome === "failed" ? 0 : charged,
+          status: outcome,
+          error,
+        });
+      };
+    };
+  }
+
+  return async (operation: AiUsageLogInput["operation"]): Promise<AiRequestDone> => {
+    return async (outcome: "success" | "failed", error?: string | null) => {
+      await recordAiUsage({
+        userId,
+        operation,
+        credits: 0,
+        status: outcome,
+        error,
+      });
+    };
+  };
+}
 
 function mapFormError(error: unknown): never {
   if (error instanceof FormServiceError) {
@@ -134,10 +212,17 @@ export const formsRouter = router({
   activity: protectedProcedure.query(async ({ ctx }) => {
     return getResponseActivity(ctx.dbUser.id);
   }),
-  generateWithAI: proProcedure.input(generateFormSchema).mutation(async ({ input }) => {
+  generateWithAI: protectedProcedure.input(generateFormSchema).mutation(async ({ ctx, input }) => {
+    const gate = aiCreditsGate(ctx.dbUser.id, ctx.dbUser.plan, FORM_GENERATION_CREDITS);
+    const done = await gate("generateWithAI");
+
     try {
-      return await generateFormDraft(input.prompt);
+      const draft = await generateFormDraft(input.prompt);
+      await done("success");
+      return draft;
     } catch (error) {
+      await done("failed", error instanceof Error ? error.message : "Unknown error");
+
       if (error instanceof AiServiceError) {
         throw new TRPCError({
           code: error.code === "NOT_CONFIGURED" ? "BAD_REQUEST" : "INTERNAL_SERVER_ERROR",
@@ -148,44 +233,55 @@ export const formsRouter = router({
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Unable to generate a form right now." });
     }
   }),
-  summarizeResponses: proProcedure.input(summarizeResponsesSchema).query(async ({ ctx, input }) => {
-    try {
-      const { form, responses } = await getFormResponses(ctx.dbUser.id, input.id);
+  summarizeResponses: protectedProcedure
+    .input(summarizeResponsesSchema)
+    .mutation(async ({ ctx, input }) => {
+      // A mutation (not a query) so each explicit user action costs exactly one
+      // credit — queries get re-run by React Query on refetch/cache invalidation
+      // and would silently charge again.
+      const gate = aiCreditsGate(ctx.dbUser.id, ctx.dbUser.plan, RESPONSE_SUMMARY_CREDITS);
+      const done = await gate("summarizeResponses");
 
-      const fields = new Map<
-        string,
-        { label: string; type: string; answers: Array<string | number | boolean | string[] | { name: string; type: string; size: number; data: string } | null> }
-      >();
+      try {
+        const { form, responses } = await getFormResponses(ctx.dbUser.id, input.id);
 
-      for (const response of responses) {
-        for (const answer of response.answers) {
-          const entry = fields.get(answer.fieldId) ?? { label: answer.label, type: answer.type, answers: [] };
-          entry.answers.push(answer.value);
-          fields.set(answer.fieldId, entry);
+        const fields = new Map<
+          string,
+          { label: string; type: string; answers: Array<string | number | boolean | string[] | { name: string; type: string; size: number; data: string } | null> }
+        >();
+
+        for (const response of responses) {
+          for (const answer of response.answers) {
+            const entry = fields.get(answer.fieldId) ?? { label: answer.label, type: answer.type, answers: [] };
+            entry.answers.push(answer.value);
+            fields.set(answer.fieldId, entry);
+          }
         }
-      }
 
-      const summary = await runResponseSummary({
-        formTitle: form.title,
-        totalResponses: responses.length,
-        fields: [...fields.values()].map((field) => ({
-          label: field.label,
-          type: field.type,
-          answerCount: field.answers.filter((value) => value !== null && value !== "").length,
-          answers: field.answers,
-        })),
-      });
-
-      return { summary };
-    } catch (error) {
-      if (error instanceof AiServiceError) {
-        throw new TRPCError({
-          code: error.code === "NOT_CONFIGURED" ? "BAD_REQUEST" : "INTERNAL_SERVER_ERROR",
-          message: error.message,
+        const summary = await runResponseSummary({
+          formTitle: form.title,
+          totalResponses: responses.length,
+          fields: [...fields.values()].map((field) => ({
+            label: field.label,
+            type: field.type,
+            answerCount: field.answers.filter((value) => value !== null && value !== "").length,
+            answers: field.answers,
+          })),
         });
-      }
 
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Unable to summarize responses right now." });
-    }
-  }),
+        await done("success");
+        return { summary };
+      } catch (error) {
+        await done("failed", error instanceof Error ? error.message : "Unknown error");
+
+        if (error instanceof AiServiceError) {
+          throw new TRPCError({
+            code: error.code === "NOT_CONFIGURED" ? "BAD_REQUEST" : "INTERNAL_SERVER_ERROR",
+            message: error.message,
+          });
+        }
+
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Unable to summarize responses right now." });
+      }
+    }),
 });

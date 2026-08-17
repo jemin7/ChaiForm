@@ -26,6 +26,25 @@ if (process.env.NODE_ENV === "production") {
   }
 }
 
+// Resolve the database user for a session token with one retry. A transient
+// database blip (e.g. Atlas briefly at its connection limit) right after
+// sign-in must not fail the whole sign-in, so a single failed lookup is
+// retried once before giving up and falling back to `user.id`.
+async function findUserByEmailWithRetry(email: string) {
+  try {
+    return await userService.findByEmail(email);
+  } catch (error) {
+    console.warn("[auth] Database lookup failed during sign-in, retrying:", error);
+
+    try {
+      return await userService.findByEmail(email);
+    } catch (retryError) {
+      console.error("[auth] Database lookup failed again during sign-in:", retryError);
+      return undefined;
+    }
+  }
+}
+
 export const authConfig = {
   providers: [
     Google({
@@ -71,29 +90,55 @@ export const authConfig = {
     strategy: "jwt",
   },
   callbacks: {
+    // Where Google sign-in failures land. Auth.js turns both a `false` return
+    // and any thrown (non-AuthError) error in this callback into the generic
+    // "Access Denied" page, which misleads users when the real cause is a
+    // transient database blip. Returning a relative URL instead redirects the
+    // user to the app's own login page, which shows a clear message.
     async signIn({ account, profile }) {
       if (account?.provider !== "google") {
         return true;
       }
 
-      // Auth.js turns any rejection in this callback into the generic
-      // "Access Denied" page, so log the real cause before it's swallowed.
       if (!profile?.email) {
         console.warn("[auth] Google sign-in rejected: no email in profile", { profile });
-        return false;
+        return "/login?error=signin_failed";
       }
 
       const image = typeof profile.picture === "string" ? profile.picture : null;
 
-      try {
-        await persistGoogleUser({
-          name: profile.name ?? profile.email,
-          email: profile.email,
-          image,
-        });
-      } catch (error) {
-        console.error("[auth] persistGoogleUser failed during Google sign-in:", error);
-        throw error;
+      // Persist the Google user with one retry: the first attempt can fail on
+      // a transient database blip (e.g. Atlas briefly at its connection
+      // limit). upsertGoogleUser is idempotent (keyed on email), so retrying
+      // is safe — a retry that finds the user created by a timed-out first
+      // attempt just updates it.
+      let persisted = false;
+      let lastError: unknown = null;
+
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          await persistGoogleUser({
+            name: profile.name ?? profile.email,
+            email: profile.email,
+            image,
+          });
+          persisted = true;
+          break;
+        } catch (error) {
+          lastError = error;
+          console.error(
+            `[auth] persistGoogleUser failed (attempt ${attempt}/2) during Google sign-in:`,
+            error,
+          );
+        }
+      }
+
+      if (!persisted) {
+        // This is an infrastructure problem, not a permission problem — send
+        // the user to the app's login page with a clear message instead of
+        // letting Auth.js show the misleading "Access Denied" dead end.
+        console.error("[auth] Google sign-in could not persist the user:", lastError);
+        return "/login?error=signin_failed";
       }
 
       return true;
@@ -114,7 +159,7 @@ export const authConfig = {
         const email = user.email ?? profile?.email;
 
         if (email) {
-          const dbUser = await userService.findByEmail(email);
+          const dbUser = await findUserByEmailWithRetry(email);
           token.id = dbUser?.id;
           // Stamp the account's session version so the API can reject tokens
           // issued before a password change.
@@ -122,6 +167,8 @@ export const authConfig = {
         }
 
         if (!token.id) {
+          // Credentials users carry their database id on `user.id`, so a
+          // failed lookup must not fail the whole sign-in.
           token.id = user.id;
         }
       }
@@ -131,7 +178,7 @@ export const authConfig = {
         const email = profile?.email ?? token.email;
 
         if (email) {
-          const dbUser = await userService.findByEmail(email);
+          const dbUser = await findUserByEmailWithRetry(email);
           token.id = dbUser?.id;
         }
       }

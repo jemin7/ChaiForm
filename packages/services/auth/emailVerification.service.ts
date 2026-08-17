@@ -5,7 +5,15 @@ import type { User } from "@repo/database";
 
 const TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-const webUrl = () => process.env.WEB_URL ?? "http://localhost:3000";
+// Build the base URL for links embedded in emails. WEB_URL is the intended
+// source of truth; if it isn't set (e.g. the web app's Vercel env only
+// configures NEXTAUTH_URL/AUTH_URL), fall back to those so verification links
+// never point at localhost in production.
+const webUrl = () =>
+  process.env.WEB_URL ??
+  process.env.NEXTAUTH_URL ??
+  process.env.AUTH_URL ??
+  "http://localhost:3000";
 
 /** Issue a verification token for a new credentials account and email it. */
 export async function sendEmailVerification(user: User): Promise<void> {

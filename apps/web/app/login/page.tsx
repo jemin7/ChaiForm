@@ -13,6 +13,7 @@ interface LoginPageProps {
   searchParams: Promise<{
     callbackUrl?: string;
     passwordUpdated?: string;
+    error?: string;
   }>;
 }
 
@@ -21,6 +22,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
   const callbackUrl = sanitizeCallbackUrl(params.callbackUrl);
   const passwordUpdated = params.passwordUpdated === "1";
+  // Set by the Google signIn callback when persisting the account failed, so
+  // users get a clear message instead of Auth.js's misleading "Access Denied"
+  // dead-end page.
+  const signinFailed = params.error === "signin_failed";
 
   if (session?.user) {
     redirect(callbackUrl);
@@ -45,6 +50,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           {passwordUpdated ? (
             <p className="mb-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-600 dark:text-emerald-300">
               Password updated. Sign in with your new password to continue.
+            </p>
+          ) : null}
+          {signinFailed ? (
+            <p className="mb-4 rounded-2xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              We couldn&apos;t complete the sign-in. Please try again in a moment.
             </p>
           ) : null}
           <LoginForm callbackUrl={callbackUrl} />

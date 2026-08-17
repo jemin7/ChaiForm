@@ -6,6 +6,15 @@ import { toUser, UserModel, type User } from "@repo/database";
 
 const PASSWORD_HASH_ROUNDS = 12;
 
+function isDuplicateKeyError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === 11000
+  );
+}
+
 /** Generate a random opaque token and return its SHA-256 hash for storage. */
 export function generateToken(): { raw: string; hash: string } {
   const raw = randomBytes(32).toString("hex");
@@ -44,28 +53,46 @@ export class UserService {
     const existing = await UserModel.findOne({ email });
 
     if (!existing) {
-      const created = await UserModel.create({
-        name: input.name,
-        email,
-        image: input.image,
-        provider: "google",
-        emailVerified: true,
-      });
-      return toUser(created.toObject());
+      try {
+        const created = await UserModel.create({
+          name: input.name,
+          email,
+          image: input.image,
+          provider: "google",
+          emailVerified: true,
+        });
+        return toUser(created.toObject());
+      } catch (error) {
+        // Two concurrent Google sign-ins for a brand-new email can both miss
+        // the findOne above and race the unique index on email. On the
+        // duplicate-key error (11000), fall through to the update path below
+        // instead of failing the sign-in.
+        if (!isDuplicateKeyError(error)) {
+          throw error;
+        }
+      }
     }
 
-    existing.name = input.name;
-    existing.image = input.image;
-    existing.emailVerified = true;
+    // `existing` may be undefined here only when the create raced the unique
+    // index and lost — re-fetch the winner before updating.
+    const user = existing ?? (await UserModel.findOne({ email }));
+
+    if (!user) {
+      throw new Error(`Unable to upsert Google user for ${email}`);
+    }
+
+    user.name = input.name;
+    user.image = input.image;
+    user.emailVerified = true;
     // Preserve an existing email/password account: only mark it as
     // Google-based if it has no password hash.
-    if (!existing.password) {
-      existing.provider = "google";
+    if (!user.password) {
+      user.provider = "google";
     }
 
-    await existing.save();
+    await user.save();
 
-    return toUser(existing.toObject());
+    return toUser(user.toObject());
   }
 
   public async createCredentialsUser(input: CreateCredentialsUserInput): Promise<User> {

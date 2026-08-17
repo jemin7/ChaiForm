@@ -237,7 +237,9 @@ export function SettingsPanel({ user }: SettingsPanelProps) {
 }
 
 function PlanCard() {
-  const meQuery = trpc.auth.me.useQuery(undefined, { retry: false });
+  // Refetch on mount so the daily credit reset (server-side, UTC) shows up
+  // without a full page reload — the global staleTime is Infinity.
+  const meQuery = trpc.auth.me.useQuery(undefined, { retry: false, refetchOnMount: "always" });
   const upgradeMutation = trpc.auth.upgradeToPro.useMutation({
     onSuccess() {
       toast.success("Welcome to ChaiForm Pro!");

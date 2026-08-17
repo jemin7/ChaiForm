@@ -59,11 +59,16 @@ function AnalyticsContent({ data }: { data: FormAnalyticsData }) {
   const { form, totalResponses, responsesOverTime, fields } = data;
   const [shareOpen, setShareOpen] = useState(false);
 
-  const meQuery = trpc.auth.me.useQuery(undefined, { retry: false });
+  // Refetch on mount so the daily credit reset (server-side, UTC) shows up
+  // without a full page reload — the global staleTime is Infinity.
+  const meQuery = trpc.auth.me.useQuery(undefined, { retry: false, refetchOnMount: "always" });
   const isPro = meQuery.data?.plan === "pro";
   const aiCredits = meQuery.data?.aiCredits;
-  const creditsRemaining = aiCredits?.remaining ?? 0;
-  const aiExhausted = !isPro && !meQuery.isLoading && creditsRemaining <= 0;
+  // Only lock the AI features when the balance is confirmed to be zero. A
+  // failed/empty `me` response must not masquerade as "out of credits" — the
+  // server still enforces the real limit and returns a clear error if the
+  // user is genuinely out.
+  const aiExhausted = !isPro && !!aiCredits && aiCredits.remaining <= 0;
 
   const summaryMutation = trpc.forms.summarizeResponses.useMutation({
     onSuccess() {
@@ -164,7 +169,9 @@ function AnalyticsContent({ data }: { data: FormAnalyticsData }) {
                 <p className="text-xs text-muted-foreground">
                   {aiExhausted
                     ? "Out of AI credits for today — they reset daily."
-                    : `${creditsRemaining} of ${aiCredits?.allowance ?? 5} AI credits left today.`}
+                    : aiCredits
+                      ? `${aiCredits.remaining} of ${aiCredits.allowance} AI credits left today.`
+                      : "Credit balance unavailable right now — try again in a moment."}
                 </p>
               ) : null}
             </div>

@@ -81,11 +81,16 @@ export function FormBuilder({ initialForm }: FormBuilderProps) {
     JSON.stringify(initialForm ?? { title: "", description: "", visibility: "private", fields: [] }),
   );
 
-  const meQuery = trpc.auth.me.useQuery(undefined, { retry: false });
+  // Refetch on mount so the daily credit reset (server-side, UTC) shows up
+  // without a full page reload — the global staleTime is Infinity.
+  const meQuery = trpc.auth.me.useQuery(undefined, { retry: false, refetchOnMount: "always" });
   const isPro = meQuery.data?.plan === "pro";
   const aiCredits = meQuery.data?.aiCredits;
-  const creditsRemaining = aiCredits?.remaining ?? 0;
-  const aiExhausted = !isPro && !meQuery.isLoading && creditsRemaining <= 0;
+  // Only lock the AI features when the balance is confirmed to be zero. A
+  // failed/empty `me` response must not masquerade as "out of credits" — the
+  // server still enforces the real limit and returns a clear error if the
+  // user is genuinely out.
+  const aiExhausted = !isPro && !!aiCredits && aiCredits.remaining <= 0;
 
   const generateMutation = trpc.forms.generateWithAI.useMutation({
     onSuccess(draft) {
@@ -527,7 +532,9 @@ export function FormBuilder({ initialForm }: FormBuilderProps) {
                         <p className="text-xs text-muted-foreground">
                           {isPro
                             ? "Unlimited AI generations included with Pro."
-                            : `${creditsRemaining} of ${aiCredits?.allowance ?? 5} AI credits left today — they reset daily.`}
+                            : aiCredits
+                              ? `${aiCredits.remaining} of ${aiCredits.allowance} AI credits left today — they reset daily.`
+                              : "Credit balance unavailable right now — try again in a moment."}
                         </p>
                       </div>
                       {aiExhausted ? (

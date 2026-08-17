@@ -46,7 +46,14 @@ app.get("/", (req, res) => {
 });
 
 app.get("/health", (req, res) => {
-  return res.json({ message: "ChaiForm server is healthy", healthy: true });
+  return res.json({
+    message: "ChaiForm server is healthy",
+    healthy: true,
+    // Lets you confirm the running build serves the AI credits feature (free
+    // plan gets 5 credits/day). If this flag is missing, the API is an older
+    // build that still gates AI behind the Pro plan.
+    features: { aiCredits: true },
+  });
 });
 
 // API docs expose the full request/response schema and are useful for

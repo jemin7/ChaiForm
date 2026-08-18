@@ -110,10 +110,6 @@ function normalizeAnswer(field: FormField, value: AnswerValue): AnswerValue {
       return value;
     }
     case "file": {
-      if (value === null) {
-        return null;
-      }
-
       if (typeof value !== "object" || value === null || Array.isArray(value)) {
         throw new FormServiceError(`"${field.label}" expects a file.`, "INVALID_FIELDS");
       }

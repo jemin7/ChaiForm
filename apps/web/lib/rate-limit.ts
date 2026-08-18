@@ -28,6 +28,20 @@ export function rateLimit(key: string, max: number, windowMs: number): boolean {
   return true;
 }
 
+// Drop expired buckets periodically so the map doesn't grow without bound.
+const SWEEP_INTERVAL_MS = 10 * 60 * 1000;
+const sweepTimer = setInterval(() => {
+  const now = Date.now();
+
+  for (const [key, bucket] of buckets) {
+    if (bucket.resetAt <= now) {
+      buckets.delete(key);
+    }
+  }
+}, SWEEP_INTERVAL_MS);
+
+sweepTimer.unref();
+
 /** Best-effort client IP, respecting a single proxy hop. */
 export async function clientIp(): Promise<string> {
   const headersList = await headers();

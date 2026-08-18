@@ -496,8 +496,9 @@ export function FormBuilder({ initialForm }: FormBuilderProps) {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="builder" className="space-y-6">
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <div className="space-y-6">
+          <div className="flex gap-6">
+            {/* Main editor column */}
+            <div className="min-w-0 flex-1 space-y-6">
               <Card className="rounded-[2rem] border-emerald-500/20 bg-card/80 shadow-xl backdrop-blur-xl">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -649,26 +650,29 @@ export function FormBuilder({ initialForm }: FormBuilderProps) {
               </Card>
             </div>
 
-            <div className="space-y-4">
-              <Card className="sticky top-24 rounded-[2rem] bg-card/80 shadow-xl backdrop-blur-xl">
-                <CardHeader>
-                  <CardTitle>Quick add</CardTitle>
-                </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-2">
-                  {fieldTypes.map((type) => (
-                    <Button
-                      key={type.value}
-                      variant="outline"
-                      size="sm"
-                      className="rounded-2xl"
-                      onClick={() => addField(type.value)}
-                    >
-                      {type.label}
-                    </Button>
-                  ))}
-                </CardContent>
-              </Card>
-              <FormPreview title={form.title} description={form.description} fields={sortedFields} />
+            {/* Sidebar — hidden below lg, sticky Quick Add always visible above the preview */}
+            <div className="hidden w-80 shrink-0 space-y-4 lg:block">
+              <div className="sticky top-24 space-y-4">
+                <Card className="rounded-[2rem] bg-card/80 shadow-xl backdrop-blur-xl">
+                  <CardHeader>
+                    <CardTitle>Quick add</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-2 gap-2">
+                    {fieldTypes.map((type) => (
+                      <Button
+                        key={type.value}
+                        variant="outline"
+                        size="sm"
+                        className="rounded-2xl"
+                        onClick={() => addField(type.value)}
+                      >
+                        {type.label}
+                      </Button>
+                    ))}
+                  </CardContent>
+                </Card>
+                <FormPreview title={form.title} description={form.description} fields={sortedFields} />
+              </div>
             </div>
           </div>
         </TabsContent>

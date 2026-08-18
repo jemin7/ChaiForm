@@ -1,10 +1,14 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import { getToken } from "next-auth/jwt";
 
+import type { User } from "@repo/database";
 import { userService } from "@repo/services/user";
 import { validateServerEnv } from "@repo/validators/env";
 
 const env = validateServerEnv(process.env);
+
+/** User shape exposed to tRPC procedures — password and internal tokens stripped. */
+export type SafeUser = Omit<User, "password" | "emailVerificationToken" | "emailVerificationTokenExpires" | "passwordResetToken" | "passwordResetTokenExpires">;
 
 type ContextOptions = Partial<CreateExpressContextOptions>;
 
@@ -49,13 +53,27 @@ export async function createContext(opts: ContextOptions = {}) {
   const sessionValid =
     !!user && (tokenSessionVersion === null || user.sessionVersion === tokenSessionVersion);
 
+  // Strip sensitive fields (password hash, reset/verification tokens) before
+  // exposing the user to tRPC procedures.
+  const safeUser: SafeUser | null = sessionValid && user
+    ? {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        image: user.image,
+        provider: user.provider,
+        plan: user.plan,
+        emailVerified: user.emailVerified,
+        sessionVersion: user.sessionVersion,
+        aiCredits: user.aiCredits,
+        aiCreditsDay: user.aiCreditsDay,
+        createdAt: user.createdAt,
+      }
+    : null;
+
   return {
-    dbUser: sessionValid ? user : null,
-    session: sessionValid && user
-      ? {
-          user,
-        }
-      : null,
+    dbUser: safeUser,
+    session: safeUser ? { user: safeUser } : null,
   };
 }
 

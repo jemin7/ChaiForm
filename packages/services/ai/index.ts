@@ -52,7 +52,9 @@ function parseRetryAfter(response: Response): number | null {
     return null;
   }
 
-  return Math.min(seconds, 30) * 1000;
+  // Cap at 30s; enforce a minimum of 5s so we don't hammer a rate-limited
+  // provider that returns a very short Retry-After.
+  return Math.max(5, Math.min(seconds, 30)) * 1000;
 }
 
 function sleep(milliseconds: number): Promise<void> {
@@ -90,7 +92,10 @@ async function chat(messages: ChatMessage[], expectJson = true): Promise<string>
         throw error;
       }
 
-      await sleep(error.retryAfterMs ?? 500 * 2 ** (attempt - 1) + Math.random() * 250);
+      // Base backoff of 2s, doubling per attempt, with jitter. A 429 without
+      // a Retry-After header needs generous cooldown to avoid hammering the
+      // provider while it's already rate-limiting us.
+      await sleep(error.retryAfterMs ?? 2000 * 2 ** (attempt - 1) + Math.random() * 500);
     }
   }
 

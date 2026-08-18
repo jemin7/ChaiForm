@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useState } from "react";
-import { Bell, Camera, KeyRound, Loader2, Monitor, Moon, ShieldCheck, Sparkles, Sun, User, Users } from "lucide-react";
+import { useActionState, useEffect, useRef, useState } from "react";
+import { Bell, Camera, KeyRound, Monitor, Moon, ShieldCheck, Sparkles, Sun, User, Users } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
@@ -43,6 +43,11 @@ export function SettingsPanel({ user }: SettingsPanelProps) {
   // The server action persists the new name in the database, but the navbar
   // and this page read the name from the NextAuth JWT. Push the rename into
   // the session and re-render so it shows up without a re-login.
+  const savedNameRef = useRef(name);
+  useEffect(() => {
+    savedNameRef.current = name;
+  }, [name]);
+
   useEffect(() => {
     if (!profileState.success) {
       return;
@@ -52,7 +57,7 @@ export function SettingsPanel({ user }: SettingsPanelProps) {
 
     void (async () => {
       try {
-        await update({ name });
+        await update({ name: savedNameRef.current });
       } catch {
         // The database save already succeeded; a session refresh failure is
         // not fatal — the name will appear after the next sign-in.
@@ -66,7 +71,7 @@ export function SettingsPanel({ user }: SettingsPanelProps) {
     return () => {
       cancelled = true;
     };
-  }, [profileState.success, name, update, router]);
+  }, [profileState.success, update, router]);
 
   return (
     <div className="space-y-8">
@@ -240,15 +245,6 @@ function PlanCard() {
   // Refetch on mount so the daily credit reset (server-side, UTC) shows up
   // without a full page reload — the global staleTime is Infinity.
   const meQuery = trpc.auth.me.useQuery(undefined, { retry: false, refetchOnMount: "always" });
-  const upgradeMutation = trpc.auth.upgradeToPro.useMutation({
-    onSuccess() {
-      toast.success("Welcome to ChaiForm Pro!");
-      meQuery.refetch();
-    },
-    onError(error) {
-      toast.error(error.message);
-    },
-  });
 
   const plan = meQuery.data?.plan ?? "free";
   const isPro = plan === "pro";
@@ -281,15 +277,11 @@ function PlanCard() {
         {isPro ? null : (
           <Button
             className="shrink-0 rounded-2xl"
-            onClick={() => upgradeMutation.mutate()}
-            disabled={upgradeMutation.isPending}
+            disabled
+            title="Payment processing is not available yet"
           >
-            {upgradeMutation.isPending ? (
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-            ) : (
-              <Sparkles className="size-4" aria-hidden="true" />
-            )}
-            Upgrade to Pro
+            <Sparkles className="size-4" aria-hidden="true" />
+            Coming soon
           </Button>
         )}
       </div>

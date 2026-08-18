@@ -34,9 +34,14 @@ export interface GetFormResponsesOptions {
   pageSize?: number;
 }
 
+/** Maximum responses returned in unpaginated mode (used by AI summary). */
+const MAX_UNPAGINATED = 1000;
+
 /**
  * Fetch responses for a form, newest first. Pass `page`/`pageSize` to
- * paginate; omit them to load every response (used by the AI summary).
+ * paginate; omit them to load responses up to a safe cap (used by the
+ * AI summary — loading every response into memory is unsafe for forms
+ * with thousands of submissions).
  */
 export async function getFormResponses(
   userId: string,
@@ -52,10 +57,10 @@ export async function getFormResponses(
   const page = paginated ? Math.max(1, options.page ?? 1) : 1;
   const pageSize = paginated
     ? Math.min(50, Math.max(1, options.pageSize ?? 10))
-    : Math.max(1, total);
+    : Math.min(MAX_UNPAGINATED, Math.max(1, total));
 
   const query = ResponseModel.find({ formId: form.id }).sort({ submittedAt: -1 });
-  const responses = paginated ? await query.skip((page - 1) * pageSize).limit(pageSize).lean() : await query.lean();
+  const responses = paginated ? await query.skip((page - 1) * pageSize).limit(pageSize).lean() : await query.limit(pageSize).lean();
 
   return {
     form: {

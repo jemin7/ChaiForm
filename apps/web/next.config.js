@@ -15,8 +15,9 @@ const nextConfig = {
   ],
   async headers() {
     const securityHeaders = [
-      // Clickjacking protection — critical for the public /f/* form pages.
-      { key: "X-Frame-Options", value: "DENY" },
+      // X-Frame-Options removed: public forms at /f/* are designed to be
+      // embedded via iframes. Clickjacking protection is handled by the
+      // CSP frame-ancestors directive below (production only).
       { key: "X-Content-Type-Options", value: "nosniff" },
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
       { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
@@ -24,7 +25,7 @@ const nextConfig = {
 
     // A full CSP needs nonce support to avoid 'unsafe-inline' for scripts
     // (Next.js inlines its streaming bootstrap). Skipped in dev so HMR isn't
-    // blocked; frame-ancestors 'none' is still covered by X-Frame-Options.
+    // blocked; frame-ancestors 'none' prevents clickjacking in production.
     if (process.env.NODE_ENV === "production") {
       securityHeaders.push({
         key: "Content-Security-Policy",
@@ -36,7 +37,9 @@ const nextConfig = {
           "img-src 'self' data: blob: https://*.googleusercontent.com",
           "font-src 'self' data:",
           "connect-src 'self'",
-          "frame-ancestors 'none'",
+          // Allow embedding public forms on any origin; dashboard pages
+          // are protected by the auth middleware regardless.
+          "frame-ancestors 'self' *",
           "base-uri 'self'",
           "form-action 'self'",
         ].join("; "),

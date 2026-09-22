@@ -7,7 +7,6 @@
     ".": "./index.ts",
     "./ai": "./ai/index.ts",
     "./auth": "./auth/index.ts",
-    "./database": "./database/index.ts",
     "./forms": "./forms/index.ts",
     "./notifications": "./notifications/index.ts",
     "./user": "./user/index.ts"
@@ -15,7 +14,6 @@
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "dotenv-cli": "^11.0.0",
     "typescript": "^5.9.3"
   },
   "dependencies": {

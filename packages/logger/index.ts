@@ -1,33 +1,22 @@
-import winston from "winston";
-
+// Leveled console logger — same call shape as before (message + optional meta
+// object) without pulling in a logging framework. Debug lines are hidden
+// outside development, matching the previous level configuration.
 const isDevelopment = process.env.NODE_ENV === "development";
 
-const loggerFormat = isDevelopment
-  ? winston.format.combine(
-      winston.format.colorize(),
-      winston.format.timestamp({
-        format: "YYYY-MM-DD HH:mm:ss",
-      }),
-      winston.format.printf(({ timestamp, level, message, ...meta }) => {
-        const metaString =
-          Object.keys(meta).length > 0
-            ? `\n${JSON.stringify(meta, null, 2)}`
-            : "";
+function write(level: "debug" | "info" | "warn" | "error", args: unknown[]) {
+  if (level === "debug" && !isDevelopment) {
+    return;
+  }
 
-        return `${timestamp} [${level}]: ${message}${metaString}`;
-      }),
-    )
-  : winston.format.combine(
-      winston.format.timestamp(),
-      winston.format.json(),
-    );
+  const [message, meta] = args;
+  const metaString = meta === undefined ? "" : `\n${JSON.stringify(meta, null, 2)}`;
 
-export const logger = winston.createLogger({
-  level: isDevelopment ? "debug" : "info",
+  console[level](`${new Date().toISOString()} [${level.toUpperCase()}]: ${String(message)}${metaString}`);
+}
 
-  format: loggerFormat,
-
-  transports: [
-    new winston.transports.Console(),
-  ],
-});
+export const logger = {
+  debug: (...args: unknown[]) => write("debug", args),
+  info: (...args: unknown[]) => write("info", args),
+  warn: (...args: unknown[]) => write("warn", args),
+  error: (...args: unknown[]) => write("error", args),
+};

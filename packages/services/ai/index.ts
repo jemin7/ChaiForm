@@ -27,8 +27,12 @@ export class AiServiceError extends Error {
   }
 }
 
-const RETRYABLE_STATUS = new Set([429, 502, 503, 504]);
-const MAX_ATTEMPTS = 3;
+const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
+// Gemini's free tier regularly returns 503 "high demand" bursts that outlast a
+// couple of fast retries, so give the provider more time to recover before
+// surfacing an error to the user.
+const MAX_ATTEMPTS = 4;
+const MAX_RETRY_BACKOFF_MS = 8_000;
 
 function isTransientError(error: unknown): error is AiServiceError {
   return (
@@ -92,10 +96,11 @@ async function chat(messages: ChatMessage[], expectJson = true): Promise<string>
         throw error;
       }
 
-      // Base backoff of 2s, doubling per attempt, with jitter. A 429 without
-      // a Retry-After header needs generous cooldown to avoid hammering the
-      // provider while it's already rate-limiting us.
-      await sleep(error.retryAfterMs ?? 2000 * 2 ** (attempt - 1) + Math.random() * 500);
+      // Base backoff of 1.5s, doubling per attempt and capped, with jitter. A
+      // 429 without a Retry-After header needs generous cooldown to avoid
+      // hammering the provider while it's already rate-limiting us.
+      const backoff = Math.min(1500 * 2 ** (attempt - 1), MAX_RETRY_BACKOFF_MS);
+      await sleep(error.retryAfterMs ?? backoff + Math.random() * 500);
     }
   }
 
@@ -134,7 +139,9 @@ async function chatOnce(messages: ChatMessage[], expectJson = true): Promise<str
   const content = payload.choices?.[0]?.message?.content;
 
   if (!content) {
-    throw new AiServiceError("AI returned an empty response.", "UPSTREAM");
+    // Some Gemini models occasionally answer with 0 tokens (reasoning consumed
+    // the budget). Give it status 502 so the retry loop treats it as transient.
+    throw new AiServiceError("AI returned an empty response.", "UPSTREAM", 502);
   }
 
   return content;

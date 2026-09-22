@@ -13,8 +13,5 @@
     "declaration": false,
     "sourceMap": false
   },
-  "include": ["src"],
-  "ts-node": {
-    "swc": true
-  }
+  "include": ["src"]
 }

@@ -10,9 +10,5 @@
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "typescript": "^5.9.3"
-  },
-  "dependencies": {
-    "winston": "^3.19.0",
-    "zod": "^4.3.5"
   }
 }

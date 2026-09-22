@@ -108,21 +108,35 @@ async function chat(messages: ChatMessage[], expectJson = true): Promise<string>
 }
 
 async function chatOnce(messages: ChatMessage[], expectJson = true): Promise<string> {
-  const response = await fetch(`${AI_BASE_URL.replace(/\/+$/, "")}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey()}`,
-    },
-    body: JSON.stringify({
-      model: AI_MODEL,
-      messages,
-      temperature: 0.4,
-      max_tokens: 2200,
-      ...(expectJson ? { response_format: { type: "json_object" } } : {}),
-    }),
-    signal: AbortSignal.timeout(45_000),
-  });
+  const key = apiKey();
+  let response: Response;
+
+  try {
+    response = await fetch(`${AI_BASE_URL.replace(/\/+$/, "")}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        model: AI_MODEL,
+        messages,
+        temperature: 0.4,
+        max_tokens: 2200,
+        ...(expectJson ? { response_format: { type: "json_object" } } : {}),
+      }),
+      signal: AbortSignal.timeout(60_000),
+    });
+  } catch (error) {
+    // Timeouts (AbortSignal), connection resets and DNS failures all land
+    // here as opaque TypeErrors. Mark them retryable so a transient network
+    // hiccup doesn't fail the request outright.
+    throw new AiServiceError(
+      `AI request failed: ${error instanceof Error ? error.message : "network error"}`,
+      "UPSTREAM",
+      502,
+    );
+  }
 
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
@@ -148,17 +162,35 @@ async function chatOnce(messages: ChatMessage[], expectJson = true): Promise<str
 }
 
 function parseJson<T>(content: string): T {
-  try {
-    return JSON.parse(content) as T;
-  } catch {
-    const match = content.match(/\{[\s\S]*\}/);
-
-    if (!match) {
-      throw new AiServiceError("AI returned an unreadable response.", "INVALID_RESPONSE");
+  const tryParse = (text: string): T | null => {
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      return null;
     }
+  };
 
-    return JSON.parse(match[0]) as T;
+  const direct = tryParse(content);
+
+  if (direct !== null) {
+    return direct;
   }
+
+  // Models sometimes wrap the JSON in prose or markdown fences; recover the
+  // outermost object before giving up.
+  const match = content.match(/\{[\s\S]*\}/);
+
+  if (match) {
+    const extracted = tryParse(match[0]);
+
+    if (extracted !== null) {
+      return extracted;
+    }
+  }
+
+  // Retryable status so one malformed response gets another attempt instead
+  // of failing the whole request.
+  throw new AiServiceError("AI returned an unreadable response.", "INVALID_RESPONSE", 502);
 }
 
 export interface AiGeneratedField {

@@ -221,6 +221,10 @@ export const formsRouter = router({
       await done("success");
       return draft;
     } catch (error) {
+      // Always log the underlying cause — the client-facing messages below are
+      // deliberately vague, so this is the only place the real reason shows up.
+      console.error("[forms.generateWithAI] failed:", error);
+
       await done("failed", error instanceof Error ? error.message : "Unknown error");
 
       if (error instanceof AiServiceError) {
@@ -272,6 +276,9 @@ export const formsRouter = router({
         await done("success");
         return { summary };
       } catch (error) {
+        // Same rationale as generateWithAI: log the real cause for debugging.
+        console.error("[forms.summarizeResponses] failed:", error);
+
         await done("failed", error instanceof Error ? error.message : "Unknown error");
 
         if (error instanceof AiServiceError) {

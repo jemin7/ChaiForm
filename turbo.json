@@ -10,7 +10,13 @@
     "GOOGLE_CLIENT_SECRET",
     "NEXT_PUBLIC_API_URL",
     "NODE_ENV",
-    "SKIP_ENV_VALIDATION"
+    "SKIP_ENV_VALIDATION",
+    "AI_API_KEY",
+    "AI_BASE_URL",
+    "AI_MODEL",
+    "AI_FALLBACK_MODELS",
+    "RESEND_API_KEY",
+    "EMAIL_FROM"
   ],
   "tasks": {
     "build": {

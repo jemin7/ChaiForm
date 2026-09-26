@@ -6,7 +6,6 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { Bell, Camera, KeyRound, Monitor, Moon, ShieldCheck, Sparkles, Sun, User, Users } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
-import { toast } from "sonner";
 
 import {
   changePasswordAction,

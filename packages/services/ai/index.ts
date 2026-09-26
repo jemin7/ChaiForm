@@ -1,7 +1,14 @@
 import type { FieldType } from "@repo/validators/create-field";
 
 const AI_BASE_URL = process.env.AI_BASE_URL ?? "https://api.openai.com/v1";
-const AI_MODEL = process.env.AI_MODEL ?? "gpt-4o-mini";
+// Primary model first, then fallbacks tried on provider-side failures (429/503
+// bursts, capacity errors). Google's free tier rate-limits per model, so when
+// one model is saturated another often still has headroom — this turns
+// "The AI service is busy right now" failures into successful generations.
+const AI_MODEL = process.env.AI_MODEL ?? "gemini-flash-lite-latest";
+const FALLBACK_MODELS = process.env.AI_FALLBACK_MODELS?.split(",")
+  .map((model) => model.trim())
+  .filter(Boolean) ?? ["gemini-flash-latest", "gemini-3.5-flash"];
 
 const ALLOWED_FIELD_TYPES: FieldType[] = [
   "text",
@@ -27,12 +34,18 @@ export class AiServiceError extends Error {
   }
 }
 
-const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
+const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
 // Gemini's free tier regularly returns 503 "high demand" bursts that outlast a
 // couple of fast retries, so give the provider more time to recover before
-// surfacing an error to the user.
+// surfacing an error to the user. Retries are additionally bounded by the
+// TOTAL_BUDGET_MS wall-clock budget below, so a hanging provider can never
+// leave a user staring at a spinner for minutes on end.
 const MAX_ATTEMPTS = 4;
 const MAX_RETRY_BACKOFF_MS = 8_000;
+/** Per-request cap: a form draft should never take anywhere near 30s. */
+const REQUEST_TIMEOUT_MS = 30_000;
+/** Hard ceiling across all models and attempts (~90s) before giving up. */
+const TOTAL_BUDGET_MS = 90_000;
 
 function isTransientError(error: unknown): error is AiServiceError {
   return (
@@ -41,6 +54,12 @@ function isTransientError(error: unknown): error is AiServiceError {
     error.status !== undefined &&
     RETRYABLE_STATUS.has(error.status)
   );
+}
+
+/** 404 = the model itself is gone/renamed (Google retires old models for new
+ * accounts). Retrying the same model is pointless — switch to the next one. */
+function isModelUnavailableError(error: unknown): error is AiServiceError {
+  return error instanceof AiServiceError && error.status === 404;
 }
 
 function parseRetryAfter(response: Response): number | null {
@@ -83,12 +102,52 @@ interface ChatMessage {
   content: string;
 }
 
+function candidateModels(): string[] {
+  return [AI_MODEL, ...FALLBACK_MODELS.filter((model) => model !== AI_MODEL)];
+}
+
 async function chat(messages: ChatMessage[], expectJson = true): Promise<string> {
+  let lastError: unknown;
+  const deadline = Date.now() + TOTAL_BUDGET_MS;
+
+  // Try each model in order; within a model, retry transient failures with
+  // backoff. A model switch happens only after the current one has burned all
+  // its attempts (or the time budget), so healthy periods behave exactly as
+  // before.
+  for (const model of candidateModels()) {
+    try {
+      return await chatWithModel(model, messages, expectJson, deadline);
+    } catch (error) {
+      lastError = error;
+
+      // Only provider-side trouble justifies falling back to another model.
+      // Config errors, unreadable responses etc. behave the same on every
+      // model, so retrying them elsewhere would just multiply latency.
+      if (!isTransientError(error) && !isModelUnavailableError(error)) {
+        throw error;
+      }
+
+      // Stop switching models once there is no time left for another round.
+      if (Date.now() >= deadline - REQUEST_TIMEOUT_MS) {
+        break;
+      }
+    }
+  }
+
+  throw lastError;
+}
+
+async function chatWithModel(
+  model: string,
+  messages: ChatMessage[],
+  expectJson: boolean,
+  deadline: number,
+): Promise<string> {
   let lastError: unknown;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      return await chatOnce(messages, expectJson);
+      return await chatOnce(model, messages, expectJson);
     } catch (error) {
       lastError = error;
 
@@ -100,14 +159,26 @@ async function chat(messages: ChatMessage[], expectJson = true): Promise<string>
       // 429 without a Retry-After header needs generous cooldown to avoid
       // hammering the provider while it's already rate-limiting us.
       const backoff = Math.min(1500 * 2 ** (attempt - 1), MAX_RETRY_BACKOFF_MS);
-      await sleep(error.retryAfterMs ?? backoff + Math.random() * 500);
+      const wait = error.retryAfterMs ?? backoff + Math.random() * 500;
+
+      // Out of wall-clock budget: surface the last error instead of sleeping
+      // into another attempt that couldn't finish anyway.
+      if (Date.now() + wait >= deadline) {
+        throw lastError;
+      }
+
+      await sleep(wait);
     }
   }
 
   throw lastError;
 }
 
-async function chatOnce(messages: ChatMessage[], expectJson = true): Promise<string> {
+async function chatOnce(
+  model: string,
+  messages: ChatMessage[],
+  expectJson = true,
+): Promise<string> {
   const key = apiKey();
   let response: Response;
 
@@ -119,13 +190,17 @@ async function chatOnce(messages: ChatMessage[], expectJson = true): Promise<str
         Authorization: `Bearer ${key}`,
       },
       body: JSON.stringify({
-        model: AI_MODEL,
+        model,
         messages,
         temperature: 0.4,
         max_tokens: 2200,
+        // Cap how much of the token budget the model may spend "thinking".
+        // Gemini reasoning models can otherwise burn the entire budget on
+        // reasoning and answer with 0 tokens of content.
+        reasoning_effort: "low",
         ...(expectJson ? { response_format: { type: "json_object" } } : {}),
       }),
-      signal: AbortSignal.timeout(60_000),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
   } catch (error) {
     // Timeouts (AbortSignal), connection resets and DNS failures all land
@@ -140,6 +215,11 @@ async function chatOnce(messages: ChatMessage[], expectJson = true): Promise<str
 
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
+
+    // Google returns 429 with a JSON body even when the API key itself is
+    // fine — the whole project has simply run out of quota for now. Treat it
+    // exactly like any other transient provider error: retry/backoff, then
+    // fall through to the fallback models.
     const message = RETRYABLE_STATUS.has(response.status)
       ? "The AI service is busy right now. Please try again in a minute."
       : `AI request failed (${response.status}). ${detail.slice(0, 200)}`;

@@ -36,6 +36,8 @@ services:
         sync: false # optional — OpenAI-compatible base URL
       - key: AI_MODEL
         sync: false # optional — model name
+      - key: AI_FALLBACK_MODELS
+        sync: false # optional — comma-separated fallbacks for 429/503 bursts
       - key: RESEND_API_KEY
         sync: false # optional — email notifications
       - key: EMAIL_FROM

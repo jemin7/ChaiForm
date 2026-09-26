@@ -1,4 +1,4 @@
-import { AI_CREDITS_PER_DAY, AiUsageLogModel, UserModel } from "@repo/database";
+import { AI_CREDITS_PER_DAY, AiUsageLogModel, UserModel, type AiUsageStatus } from "@repo/database";
 
 export { AI_CREDITS_PER_DAY };
 
@@ -114,7 +114,7 @@ export interface AiUsageLogInput {
   userId: string;
   operation: "generateWithAI" | "summarizeResponses";
   credits: number;
-  status: "success" | "insufficient_credits" | "failed";
+  status: AiUsageStatus;
   error?: string | null;
 }
 

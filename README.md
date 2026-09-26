@@ -85,7 +85,8 @@ The full list lives in [`.env.example`](.env.example) — the source of truth. K
 | `MONGODB_URI` | MongoDB Atlas connection string |
 | `AUTH_SECRET` | Auth.js secret (generate with `openssl rand -base64 32`) |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth app |
-| `AI_API_KEY` / `AI_BASE_URL` / `AI_MODEL` | AI features — OpenAI-compatible (works with Gemini) |
+| `AI_API_KEY` / `AI_BASE_URL` / `AI_MODEL` | AI features — OpenAI-compatible (works with Gemini). Use the Google AI Studio API key; Gemini via the OpenAI-compatible endpoint expects it as the Bearer token (the newer `AQ.` auth keys work) |
+| `AI_FALLBACK_MODELS` | Optional comma-separated fallback models tried when the primary model is rate-limited (429/503) |
 | `RESEND_API_KEY` | Email notifications on new responses |
 
 ## 👩‍💻 For Developers

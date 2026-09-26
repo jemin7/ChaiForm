@@ -1,13 +1,15 @@
 import { randomUUID } from "node:crypto";
 import mongoose, { type Model } from "mongoose";
 
+export type AiUsageStatus = "success" | "insufficient_credits" | "failed" | "provider_error";
+
 export interface AiUsageLog {
   id: string;
   userId: string;
   operation: "generateWithAI" | "summarizeResponses";
   /** Credits deducted for this request (0 for Pro users, who are unlimited). */
   credits: number;
-  status: "success" | "insufficient_credits" | "failed";
+  status: AiUsageStatus;
   error: string | null;
   createdAt: Date;
 }
@@ -36,7 +38,7 @@ const aiUsageLogSchema = new mongoose.Schema<AiUsageLogLean>(
     status: {
       type: String,
       required: true,
-      enum: ["success", "insufficient_credits", "failed"],
+      enum: ["success", "insufficient_credits", "failed", "provider_error"],
     },
     error: { type: String, default: null },
     createdAt: { type: Date, default: () => new Date() },

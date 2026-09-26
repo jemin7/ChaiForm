@@ -10,6 +10,7 @@ export const serverEnvSchema = z.object({
   AI_API_KEY: z.string().optional(),
   AI_BASE_URL: z.string().url().optional(),
   AI_MODEL: z.string().optional(),
+  AI_FALLBACK_MODELS: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
 });

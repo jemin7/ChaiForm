@@ -28,6 +28,7 @@ import {
   spendAiCredits,
   type AiUsageLogInput,
 } from "@repo/services/user";
+import type { AiUsageStatus } from "@repo/database";
 import { generateFormSchema, summarizeResponsesSchema } from "@repo/validators/ai";
 import { createFormSchema } from "@repo/validators/create-form";
 import { publishFormSchema } from "@repo/validators/publish-form";
@@ -42,7 +43,28 @@ import {
 import { protectedProcedure, publicProcedure, router } from "../trpc";
 
 /** Finalize an AI request: record usage (and refund credits on failure). */
-type AiRequestDone = (outcome: "success" | "failed", error?: string | null) => Promise<void>;
+type AiRequestDone = (outcome: AiUsageStatus, error?: string | null) => Promise<void>;
+
+/** Turn a raw AI error into a user-facing message worth showing in a toast. */
+function aiUserMessage(error: unknown): string {
+  if (error instanceof AiServiceError) {
+    // 429 = the provider quota/rate limit is exhausted (Google returns 429
+    // with a JSON body even when the key is fine), 5xx = the provider is
+    // having a bad day. Both recover on their own — say so instead of the
+    // cryptic "Unable to generate a form right now."
+    if (error.code === "NOT_CONFIGURED") {
+      return error.message;
+    }
+
+    if (error.status === 429) {
+      return "Our AI provider is rate-limiting us right now. Please try again in a few minutes."
+    }
+
+    return "The AI service is temporarily unavailable. Please try again in a minute.";
+  }
+
+  return "Unable to complete the AI request right now.";
+}
 
 /**
  * Spend AI credits before an AI request and refund them if it fails. Pro users
@@ -75,10 +97,11 @@ function aiCreditsGate(userId: string, plan: "free" | "pro", cost: number) {
         throw error;
       }
 
-      return async (outcome: "success" | "failed", error?: string | null) => {
+      return async (outcome: AiUsageStatus, error?: string | null) => {
         // Refund before the error propagates so a failed AI request never
-        // silently consumes the user's credit.
-        if (outcome === "failed") {
+        // silently consumes the user's credit. Provider outages are never the
+        // user's fault — refund those too.
+        if (outcome === "failed" || outcome === "provider_error") {
           try {
             await refundAiCredits(userId, cost);
           } catch (refundError) {
@@ -89,7 +112,7 @@ function aiCreditsGate(userId: string, plan: "free" | "pro", cost: number) {
         await recordAiUsage({
           userId,
           operation,
-          credits: outcome === "failed" ? 0 : charged,
+          credits: outcome === "success" ? charged : 0,
           status: outcome,
           error,
         });
@@ -98,7 +121,7 @@ function aiCreditsGate(userId: string, plan: "free" | "pro", cost: number) {
   }
 
   return async (operation: AiUsageLogInput["operation"]): Promise<AiRequestDone> => {
-    return async (outcome: "success" | "failed", error?: string | null) => {
+    return async (outcome: AiUsageStatus, error?: string | null) => {
       await recordAiUsage({
         userId,
         operation,
@@ -225,16 +248,17 @@ export const formsRouter = router({
       // deliberately vague, so this is the only place the real reason shows up.
       console.error("[forms.generateWithAI] failed:", error);
 
-      await done("failed", error instanceof Error ? error.message : "Unknown error");
+      const isProviderError = error instanceof AiServiceError && error.code !== "NOT_CONFIGURED";
+      await done(isProviderError ? "provider_error" : "failed", error instanceof Error ? error.message : "Unknown error");
 
       if (error instanceof AiServiceError) {
         throw new TRPCError({
           code: error.code === "NOT_CONFIGURED" ? "BAD_REQUEST" : "INTERNAL_SERVER_ERROR",
-          message: error.message,
+          message: aiUserMessage(error),
         });
       }
 
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Unable to generate a form right now." });
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: aiUserMessage(error) });
     }
   }),
   summarizeResponses: protectedProcedure
@@ -279,16 +303,17 @@ export const formsRouter = router({
         // Same rationale as generateWithAI: log the real cause for debugging.
         console.error("[forms.summarizeResponses] failed:", error);
 
-        await done("failed", error instanceof Error ? error.message : "Unknown error");
+        const isProviderError = error instanceof AiServiceError && error.code !== "NOT_CONFIGURED";
+        await done(isProviderError ? "provider_error" : "failed", error instanceof Error ? error.message : "Unknown error");
 
         if (error instanceof AiServiceError) {
           throw new TRPCError({
             code: error.code === "NOT_CONFIGURED" ? "BAD_REQUEST" : "INTERNAL_SERVER_ERROR",
-            message: error.message,
+            message: aiUserMessage(error),
           });
         }
 
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Unable to summarize responses right now." });
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: aiUserMessage(error) });
       }
     }),
 });
